@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火影忍者 - 忍者世界</title>
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 页面背景 - 火影暗系风格 */
+        body {
+            background: linear-gradient(135deg, #121212, #2c2c2c);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            /* 页面淡入动画 */
+            animation: pageFade 1s ease;
+        }
+
+        /* 页面标题样式 */
+        .page-title {
+            text-align: center;
+            font-size: 2.8rem;
+            margin: 30px 0;
+            color: #f5c518; /* 木叶黄 */
+            text-shadow: 0 0 15px #e63946, 0 0 25px #e63946; /* 火影红发光 */
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #ddd;
+            margin-bottom: 40px;
+            font-size: 1.2rem;
+        }
+
+        /* 卡片容器 - 网格布局 */
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 火影卡片主体样式 */
+        .naruto-card {
+            background: linear-gradient(160deg, #1a1a1a, #333);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            transition: all 0.4s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        /* 卡片悬浮动画 - 核心效果 */
+        .naruto-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(230, 57, 70, 0.4);
+            border-color: #e63946;
+        }
+
+        /* 卡片图片 */
+        .card-img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            transition: 0.4s;
+        }
+
+        .naruto-card:hover .card-img {
+            transform: scale(1.08);
+        }
+
+        /* 卡片内容 */
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #f5c518;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-desc {
+            color: #ccc;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            background: #e63946;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background: rgba(20, 20, 20, 0.9);
+            padding: 15px 30px;
+            border-radius: 15px;
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            color: #f5c518;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #e63946;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #e63946;
+        }
+
+        /* 动画定义 */
+        @keyframes pageFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 发光动画 */
+        @keyframes glow {
+            0% { box-shadow: 0 0 10px #e63946; }
+            50% { box-shadow: 0 0 20px #f5c518, 0 0 30px #e63946; }
+            100% { box-shadow: 0 0 10px #e63946; }
+        }
+
+        .glow-btn {
+            animation: glow 2s infinite;
+            padding: 8px 16px;
+            background: #e63946;
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<div class="navbar">
+    <div class="logo">火影忍者 🌀</div>
+    <div class="nav-links">
+        <a href="#"><i class="fas fa-home"></i> 首页</a>
+        <a href="#"><i class="fas fa-users"></i> 角色</a>
+        <a href="#"><i class="fas fa-book"></i> 剧情</a>
+        <a href="#"><i class="fas fa-fire"></i> 技能</a>
+    </div>
+</div>
+
+<!-- 页面标题 -->
+<h1 class="page-title">木叶忍者 🌟</h1>
+<p class="subtitle">努力、坚持、友情 —— 火影的精神</p>
+
+<!-- 卡片布局容器 -->
+<div class="card-container">
+
+    <!-- 卡片1：鸣人 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d817a189758.jpg" alt="漩涡鸣人" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-fire"></i> 漩涡鸣人</h3>
+            <p class="card-desc">火之国木叶隐村的忍者，主角。从小孤独，却始终坚持自己的忍道，最终成为七代目火影，守护了整个村子。</p>
+            <span class="tag">七代目火影</span>
+            <span class="tag">漩涡一族</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+    <!-- 卡片2：佐助 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d817cd8667a.jpg" alt="宇智波佐助" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-bolt"></i> 宇智波佐助</h3>
+            <p class="card-desc">宇智波一族的天才忍者，鸣人一生的对手与挚友，为了守护村子选择独自背负一切，是真正的英雄。</p>
+            <span class="tag">天才忍者</span>
+            <span class="tag">写轮眼</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+    <!-- 卡片3：小樱 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d817e266666.jpg" alt="春野樱" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-heart"></i> 春野樱</h3>
+            <p class="card-desc">新一代女忍者中的佼佼者，师从纲手，掌握怪力与医疗忍术，坚强勇敢，是第七班不可或缺的成员。</p>
+            <span class="tag">医疗忍者</span>
+            <span class="tag">怪力</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+    <!-- 卡片4：卡卡西 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d817f6a9666.jpg" alt="旗木卡卡西" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-eye"></i> 旗木卡卡西</h3>
+            <p class="card-desc">第七班的老师，拷贝忍者，拥有写轮眼，性格温柔又帅气，教会鸣人三人团队合作的意义。</p>
+            <span class="tag">拷贝忍者</span>
+            <span class="tag">六代目火影</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+    <!-- 卡片5：自来也 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d81808e6666.jpg" alt="自来也" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-book"></i> 自来也</h3>
+            <p class="card-desc">鸣人的师父，传说中的三忍之一，幽默又强大，用生命守护忍界，是鸣人最尊敬的人。</p>
+            <span class="tag">三忍</span>
+            <span class="tag">仙术</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+    <!-- 卡片6：纲手 -->
+    <div class="naruto-card">
+        <img src="https://pic.qtfw.com/2025/09/04/66d81819f6666.jpg" alt="纲手" class="card-img">
+        <div class="card-content">
+            <h3 class="card-title"><i class="fas fa-medkit"></i> 纲手</h3>
+            <p class="card-desc">五代目火影，医疗忍术巅峰，拥有怪力，教会小樱成长，是木叶最强的女忍者之一。</p>
+            <span class="tag">五代火影</span>
+            <span class="tag">医疗巅峰</span>
+            <button class="glow-btn">查看忍术</button>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

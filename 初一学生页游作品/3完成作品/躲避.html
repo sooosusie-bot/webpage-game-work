@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>地铁跑酷 - 完整版</title>
+    <style>
+        * {margin: 0;padding: 0;box-sizing: border-box;}
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #222;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game {
+            width: 360px;
+            height: 600px;
+            background: #71c565;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #fff;
+            border-radius: 10px;
+        }
+        .road {
+            width: 120px;
+            height: 600px;
+            background: #999;
+            float: left;
+            border-right: 2px dashed #666;
+        }
+        #player {
+            width: 40px;
+            height: 60px;
+            background: #ff4444;
+            position: absolute;
+            bottom: 80px;
+            left: 160px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            z-index: 9;
+        }
+        .player-slide {
+            height: 30px !important;
+            bottom: 80px !important;
+        }
+        .train {
+            width: 40px;
+            height: 60px;
+            background: #2266ff;
+            position: absolute;
+            border-radius: 6px;
+        }
+        .coin {
+            width: 25px;
+            height: 25px;
+            background: gold;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .magnet {
+            width: 30px;
+            height: 30px;
+            background: purple;
+            border-radius: 5px;
+            position: absolute;
+        }
+        .shield {
+            width: 30px;
+            height: 30px;
+            background: cyan;
+            border-radius: 50%;
+            position: absolute;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 22px;
+            color: #fff;
+            font-weight: bold;
+            z-index: 10;
+        }
+        #coinCount {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 22px;
+            color: gold;
+            font-weight: bold;
+            z-index: 10;
+        }
+        #over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            font-size: 30px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 25px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            z-index: 99;
+        }
+        button {
+            margin-top: 15px;
+            padding: 8px 18px;
+            border: none;
+            border-radius: 5px;
+            background: #ff4444;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .effect {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid cyan;
+            border-radius: 50%;
+            opacity: 0.7;
+            z-index: 8;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="score">分数：0</div>
+        <div id="coinCount">金币：0</div>
+        <div class="road"></div>
+        <div class="road"></div>
+        <div class="road"></div>
+        <div id="player"></div>
+        <div id="over">
+            <div>游戏结束</div>
+            <div id="finalScore" style="margin:10px 0"></div>
+            <div id="finalCoin"></div>
+            <button onclick="restart()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const game = document.getElementById('game');
+        const player = document.getElementById('player');
+        const scoreText = document.getElementById('score');
+        const coinText = document.getElementById('coinCount');
+        const gameOver = document.getElementById('over');
+        const finalScore = document.getElementById('finalScore');
+        const finalCoin = document.getElementById('finalCoin');
+
+        const laneX = [40, 160, 280];
+        let nowLane = 1;
+        let score = 0;
+        let coins = 0;
+        let speed = 6;
+        let gameRun = true;
+        let jumpState = false;
+        let slideState = false;
+        let shield = false;
+        let magnet = false;
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if(!gameRun) return;
+            switch(e.key) {
+                case 'ArrowLeft':
+                    nowLane = Math.max(0, nowLane - 1);
+                    player.style.left = laneX[nowLane] + 'px';
+                    break;
+                case 'ArrowRight':
+                    nowLane = Math.min(2, nowLane + 1);
+                    player.style.left = laneX[nowLane] + 'px';
+                    break;
+                case 'ArrowUp':
+                    if(!jumpState && !slideState) jump();
+                    break;
+                case 'ArrowDown':
+                    if(!jumpState && !slideState) slide();
+                    break;
+            }
+        });
+
+        // 跳跃
+        function jump() {
+            jumpState = true;
+            player.style.bottom = '160px';
+            setTimeout(()=>{
+                player.style.bottom = '80px';
+                jumpState = false;
+            }, 450);
+        }
+
+        // 滑行
+        function slide() {
+            slideState = true;
+            player.classList.add('player-slide');
+            setTimeout(()=>{
+                player.classList.remove('player-slide');
+                slideState = false;
+            }, 600);
+        }
+
+        // 生成障碍物
+        function createTrain() {
+            if(!gameRun) return;
+            let lane = Math.floor(Math.random() * 3);
+            let train = document.createElement('div');
+            train.className = 'train';
+            train.style.left = laneX[lane] + 'px';
+            train.style.top = '-80px';
+            game.appendChild(train);
+
+            function moveTrain() {
+                if(!gameRun) return;
+                let top = parseInt(train.style.top);
+                top += speed;
+                train.style.top = top + 'px';
+
+                // 碰撞
+                let pTop = 600 - 80;
+                if(top > pTop - 35 && top < pTop + 35 && lane === nowLane) {
+                    if(shield) {
+                        shield = false;
+                        train.remove();
+                        return;
+                    }
+                    gameEnd();
+                }
+
+                if(top > 650) {
+                    train.remove();
+                    score++;
+                    speed += 0.05;
+                    scoreText.innerText = "分数：" + score;
+                    return;
+                }
+                requestAnimationFrame(moveTrain);
+            }
+            moveTrain();
+        }
+
+        // 生成金币
+        function createCoin() {
+            if(!gameRun) return;
+            let lane = Math.floor(Math.random() * 3);
+            let coin = document.createElement('div');
+            coin.className = 'coin';
+            coin.style.left = laneX[lane] + 7 + 'px';
+            coin.style.top = '-30px';
+            game.appendChild(coin);
+
+            function move() {
+                if(!gameRun) return;
+                let top = parseInt(coin.style.top);
+                top += speed;
+                coin.style.top = top + 'px';
+
+                // 吃金币
+                let dis = Math.abs(parseInt(coin.style.left) - laneX[nowLane]);
+                let range = magnet ? 80 : 10;
+                if(top > 480 && top < 540 && dis < range) {
+                    coin.remove();
+                    coins++;
+                    coinText.innerText = "金币：" + coins;
+                    return;
+                }
+
+                if(top > 650) {
+                    coin.remove();
+                    return;
+                }
+                requestAnimationFrame(move);
+            }
+            move();
+        }
+
+        // 生成道具
+        function createItem() {
+            if(!gameRun) return;
+            let type = Math.random() > 0.5 ? 'shield' : 'magnet';
+            let lane = Math.floor(Math.random() * 3);
+            let item = document.createElement('div');
+            item.className = type;
+            item.style.left = laneX[lane] + 7 + 'px';
+            item.style.top = '-30px';
+            game.appendChild(item);
+
+            function move() {
+                if(!gameRun) return;
+                let top = parseInt(item.style.top);
+                top += speed;
+                item.style.top = top + 'px';
+
+                if(top > 480 && top < 540 && Math.abs(parseInt(item.style.left)-laneX[nowLane])<20) {
+                    item.remove();
+                    if(type==='shield') shield=true;
+                    if(type==='magnet') magnet=true;
+                    setTimeout(()=>magnet=false, 5000);
+                    return;
+                }
+                if(top>650) {item.remove();return;}
+                requestAnimationFrame(move);
+            }
+            move();
+        }
+
+        // 主循环
+        function gameLoop() {
+            if(gameRun) {
+                createTrain();
+                setTimeout(()=>createCoin(), 500);
+                setTimeout(()=>Math.random()>0.7&&createItem(), 2000);
+                setTimeout(gameLoop, 800);
+            }
+        }
+
+        // 游戏结束
+        function gameEnd() {
+            gameRun = false;
+            finalScore.innerText = "分数：" + score;
+            finalCoin.innerText = "金币：" + coins;
+            gameOver.style.display = 'block';
+        }
+
+        // 重新开始
+        function restart() {
+            document.querySelectorAll('.train,.coin,.shield,.magnet').forEach(i=>i.remove());
+            score = 0;
+            coins = 0;
+            speed = 6;
+            nowLane = 1;
+            gameRun = true;
+            shield = false;
+            magnet = false;
+            player.style.left = laneX[1] + 'px';
+            scoreText.innerText = "分数：0";
+            coinText.innerText = "金币：0";
+            gameOver.style.display = 'none';
+            gameLoop();
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>

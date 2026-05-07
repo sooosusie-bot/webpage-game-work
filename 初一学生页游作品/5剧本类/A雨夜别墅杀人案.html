@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>推理游戏：雨夜别墅杀人案</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #1a1a1d;
+            color: #f5f5f5;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+            line-height: 1.7;
+        }
+
+        /* 所有场景默认隐藏 */
+        .scene {
+            display: none;
+            padding: 25px;
+            background: #2c2c34;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            min-height: 400px;
+        }
+
+        /* 只有被锚点命中的才显示 */
+        .scene:target {
+            display: block;
+        }
+
+        /* 开局默认显示start */
+        #start {
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            color: #e63946;
+            margin-bottom: 20px;
+            font-size: 26px;
+        }
+
+        .dialog {
+            margin: 16px 0;
+            font-size: 17px;
+        }
+
+        .name {
+            color: #45f0df;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .player {
+            color: #ffb703;
+        }
+
+        .choice {
+            display: inline-block;
+            margin: 10px 12px 10px 0;
+            padding: 10px 18px;
+            background: #e63946;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .choice:hover {
+            background: #c1121f;
+        }
+
+        .tip {
+            color: #a8dadc;
+            font-style: italic;
+            margin: 10px 0;
+        }
+
+        .ending {
+            color: #f77f00;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 开场 -->
+<div id="start" class="scene">
+    <h1>雨夜别墅杀人案</h1>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        2025年深冬，暴雨不停。你是一名临时被叫来的私家侦探，来到山顶的豪华别墅。
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        别墅主人——富商赵先生，死在了自己的书房里。房门反锁，窗户紧闭，没有强行闯入痕迹。
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        现场有4名嫌疑人，都与死者有密切关系。你必须通过对话、线索、推理找出真凶。
+    </div>
+    <div class="tip">你决定先了解现场情况。</div>
+    <a href="#scene1" class="choice">进入调查</a>
+</div>
+
+<!-- 现场初步调查 -->
+<div id="scene1" class="scene">
+    <h1>现场调查</h1>
+    <div class="dialog">
+        <span class="name">警官：</span>
+        你可算来了。死者赵先生，52岁，别墅主人。死亡时间大概在晚上9点到10点之间。
+    </div>
+    <div class="dialog">
+        <span class="name">警官：</span>
+        死因是胸口锐器刺伤，一击致命。房间是反锁的，属于典型的密室。
+    </div>
+    <div class="dialog">
+        <span class="name">警官：</span>
+        我们没有找到凶器。桌上有一杯没喝完的红酒，一个打翻的烟灰缸，和一页被撕掉一角的合同。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        密室、消失的凶器、熟人作案……这不是随机犯罪，是有预谋的。
+    </div>
+    <div class="dialog">
+        <span class="name">警官：</span>
+        4名嫌疑人都在客厅等着，你可以挨个问话。
+    </div>
+    <a href="#scene2" class="choice">先问妻子</a>
+    <a href="#scene3" class="choice">先问儿子</a>
+    <a href="#scene4" class="choice">先问管家</a>
+    <a href="#scene5" class="choice">先问私人医生</a>
+</div>
+
+<!-- 妻子证词 -->
+<div id="scene2" class="scene">
+    <h1>嫌疑人：林女士（妻子）</h1>
+    <div class="dialog">
+        <span class="name">林女士：</span>
+        （哭泣）我真的不知道……晚上8点半我给他送过一次茶，之后就一直在卧室。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你们最近关系怎么样？
+    </div>
+    <div class="dialog">
+        <span class="name">林女士：</span>
+        ……不太好。他在外面有别的人，还要把财产转移，我什么都得不到。
+    </div>
+    <div class="dialog">
+        <span class="name">林女士：</span>
+        但我没有杀他！我就算恨他，也不会用这种方式！
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        9点到10点，你听到书房有动静吗？
+    </div>
+    <div class="dialog">
+        <span class="name">林女士：</span>
+        雨声太大了，我什么都没听见。
+    </div>
+    <a href="#scene1" class="choice">返回重新选择询问对象</a>
+</div>
+
+<!-- 儿子证词 -->
+<div id="scene3" class="scene">
+    <h1>嫌疑人：赵小磊（儿子）</h1>
+    <div class="dialog">
+        <span class="name">赵小磊：</span>
+        我跟我爸吵了一架，就在晚饭的时候。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        为什么吵架？
+    </div>
+    <div class="dialog">
+        <span class="name">赵小磊：</span>
+        他冻结了我的卡，说我只会败家，不肯给我一分钱创业。
+    </div>
+    <div class="dialog">
+        <span class="name">赵小磊：</span>
+        我气不过，8点50分左右去找他理论，但他把门反锁，根本不理我。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你没进去？
+    </div>
+    <div class="dialog">
+        <span class="name">赵小磊：</span>
+        没有。我在门口站了几分钟，骂了几句就走了。
+    </div>
+    <a href="#scene1" class="choice">返回重新选择询问对象</a>
+</div>
+
+<!-- 管家证词 -->
+<div id="scene4" class="scene">
+    <h1>嫌疑人：老陈（管家）</h1>
+    <div class="dialog">
+        <span class="name">老陈：</span>
+        我在这个家干了15年，先生对我不薄，但他最近半年变得很奇怪。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        奇怪在哪里？
+    </div>
+    <div class="dialog">
+        <span class="name">老陈：</span>
+        他经常偷偷销毁文件，夜里会一个人在书房自言自语，还怕被人听见。
+    </div>
+    <div class="dialog">
+        <span class="name">老陈：</span>
+        9点左右，我看到医生从书房方向走过来，手上好像拿着什么东西。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你确定？
+    </div>
+    <div class="dialog">
+        <span class="name">老陈：</span>
+        灯光暗，但我认得他的衣服。
+    </div>
+    <a href="#scene1" class="choice">返回重新选择询问对象</a>
+</div>
+
+<!-- 医生证词 -->
+<div id="scene5" class="scene">
+    <h1>嫌疑人：周医生（私人医生）</h1>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        我8点40分到9点之间确实在书房，给他做血压检查。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你离开的时候，他还活着？
+    </div>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        当然。我们还聊了几句，他心情不太好。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        管家说你手上拿着东西离开。
+    </div>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        （紧张）只是医疗箱，我每天都带过来。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你和死者有没有利益冲突？
+    </div>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        没有……我只是他的医生。
+    </div>
+    <a href="#scene1" class="choice">返回重新询问</a>
+    <a href="#scene6" class="choice">我要开始推理凶手</a>
+</div>
+
+<!-- 推理阶段 -->
+<div id="scene6" class="scene">
+    <h1>最终推理</h1>
+    <div class="dialog">
+        <span class="name">你：</span>
+        所有证词和线索都拼在一起了。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        密室、消失的凶器、9点前后的时间线、每个人的动机……
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        现在，我要指认真凶。
+    </div>
+    <a href="#end-bad-wife" class="choice">凶手是妻子</a>
+    <a href="#end-bad-son" class="choice">凶手是儿子</a>
+    <a href="#end-bad-chen" class="choice">凶手是管家</a>
+    <a href="#end-true" class="choice">凶手是私人医生</a>
+</div>
+
+<!-- 错误结局：妻子 -->
+<div id="end-bad-wife" class="scene">
+    <div class="ending">推理失败！</div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        妻子虽然有动机，但她没有进入书房，也没有机会制造密室。
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        真凶依然逍遥法外，案件成了悬案。
+    </div>
+    <a href="#start" class="choice">重新开始游戏</a>
+</div>
+
+<!-- 错误结局：儿子 -->
+<div id="end-bad-son" class="scene">
+    <div class="ending">推理失败！</div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        儿子的确有动机，但他没有进入书房，门一直反锁。
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        你抓错了人，真正的凶手逃脱了。
+    </div>
+    <a href="#start" class="choice">重新开始游戏</a>
+</div>
+
+<!-- 错误结局：管家 -->
+<div id="end-bad-chen" class="scene">
+    <div class="ending">推理失败！</div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        管家虽然知道内情，但他没有杀人动机，也没有凶器。
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        你的判断出现了失误。
+    </div>
+    <a href="#start" class="choice">重新开始游戏</a>
+</div>
+
+<!-- 真结局：医生 -->
+<div id="end-true" class="scene">
+    <div class="ending">恭喜你！推理成功！找出真凶！</div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        真凶就是你——周医生。
+    </div>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        你胡说！我只是个医生！
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你8点40分进入书房，以检查身体为由接近死者。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你用随身携带的**医用冰锥**行凶，冰锥会在密室里融化消失，这就是找不到凶器的原因。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        你离开时反锁了门，利用房间内的自动锁制造密室。
+    </div>
+    <div class="dialog">
+        <span class="name">你：</span>
+        死者发现你挪用他的医疗资金进行非法交易，你为了封口杀了他。
+    </div>
+    <div class="dialog">
+        <span class="name">周医生：</span>
+        （崩溃）是他逼我的！他要举报我！我没有选择！
+    </div>
+    <div class="dialog">
+        <span class="name">旁白：</span>
+        案件告破。暴雨停下，黎明到来。你再一次用推理还原了真相。
+    </div>
+    <a href="#start" class="choice">再来一次</a>
+</div>
+
+</body>
+</html>

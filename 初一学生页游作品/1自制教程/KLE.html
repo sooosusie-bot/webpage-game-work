@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML+CSS编程实践 - 高速障碍物接球小游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .title {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 120px);
+        }
+
+        .code-panel {
+            flex: 1;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .panel-title {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #codeEditor {
+            flex: 1;
+            width: 100%;
+            background: #0f172a;
+            color: #e2e8f0;
+            border: none;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 14px;
+            font-family: Consolas, Monaco, monospace;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        .btn-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        #runBtn {
+            background: #10b981;
+            color: white;
+            flex: 2;
+        }
+        #runBtn:hover { background: #059669; }
+
+        #resetBtn {
+            background: #f59e0b;
+            color: white;
+            flex: 1;
+        }
+        #resetBtn:hover { background: #d97706; }
+
+        .game-panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #gameFrame {
+            flex: 1;
+            width: 100%;
+            border: 2px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+
+        .tips {
+            margin-top: 15px;
+            color: #4b5563;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">🎮 HTML+CSS入门实践 - 高速障碍物接球小游戏</h1>
+
+    <div class="container">
+        <div class="code-panel">
+            <div class="panel-title">
+                <span>✍️ 代码后台编辑器</span>
+                <span>修改 sx 数值 → 障碍物加速</span>
+            </div>
+            <textarea id="codeEditor" spellcheck="false"></textarea>
+            <div class="btn-group">
+                <button id="runBtn">▶️ 运行代码</button>
+                <button id="resetBtn">🔄 重置初始代码</button>
+            </div>
+        </div>
+
+        <div class="game-panel">
+            <div class="panel-title" style="color:#2d3748;">🎯 游戏实时运行窗口</div>
+            <iframe id="gameFrame"></iframe>
+            <div class="tips">
+                ✔ 操作：鼠标移动控制底部挡板<br>
+                ✔ 调速技巧：修改代码中 sx 数值，数字越大障碍物越快<br>
+                ✔ 知识点：JS变量、速度参数、边界反弹、碰撞检测
+            </div>
+        </div>
+    </div>
+
+<script>
+const defaultCode = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>障碍物接球游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f4f8;
+            font-family: Arial;
+        }
+        #game {
+            width: 400px;
+            height: 500px;
+            background: #ffffff;
+            border: 3px solid #2d3748;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        #paddle {
+            width: 80px;
+            height: 15px;
+            background: #3b82f6;
+            border-radius: 4px;
+            position: absolute;
+            bottom: 20px;
+            left: 160px;
+        }
+        #ball {
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            position: absolute;
+            top: 50px;
+            left: 190px;
+        }
+        .block {
+            position: absolute;
+            background: #8b5cf6;
+            border-radius: 4px;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="score">分数：0</div>
+        <div id="ball"></div>
+        <div id="paddle"></div>
+    </div>
+
+    <script>
+        const game = document.getElementById('game');
+        const ball = document.getElementById('ball');
+        const paddle = document.getElementById('paddle');
+        const scoreText = document.getElementById('score');
+
+        let ballX = 190;
+        let ballY = 50;
+        let speedX = 3;
+        let speedY = 4;
+        let paddleX = 160;
+        let score = 0;
+
+        // ========== 已提速！障碍物速度 sx 全部加大 ==========
+        const blocks = [
+            { x: 80, y: 120, w: 60, h: 15, sx: 2 },
+            { x: 260, y: 220, w: 60, h: 15, sx: -2 },
+            { x: 120, y: 300, w: 50, h: 15, sx: 1.8 }
+        ];
+
+        blocks.forEach(b => {
+            let div = document.createElement('div');
+            div.className = 'block';
+            div.style.left = b.x + 'px';
+            div.style.top = b.y + 'px';
+            div.style.width = b.w + 'px';
+            div.style.height = b.h + 'px';
+            game.appendChild(div);
+        });
+
+        game.addEventListener('mousemove', (e) => {
+            const rect = game.getBoundingClientRect();
+            paddleX = e.clientX - rect.left - 40;
+            if(paddleX < 0) paddleX = 0;
+            if(paddleX > 320) paddleX = 320;
+            paddle.style.left = paddleX + 'px';
+        });
+
+        function updateBlocks(){
+            blocks.forEach(b => {
+                b.x += b.sx;
+                if(b.x <= 0 || b.x + b.w >= 400){
+                    b.sx *= -1;
+                }
+            });
+            const doms = document.querySelectorAll('.block');
+            blocks.forEach((b,i)=>{
+                doms[i].style.left = b.x+'px';
+            });
+        }
+
+        function isHit(px,py,pw,ph,bx,by,bw,bh){
+            return px < bx+bw && px+pw > bx && py < by+bh && py+ph > by;
+        }
+
+        function gameLoop() {
+            ballX += speedX;
+            ballY += speedY;
+            updateBlocks();
+
+            if(ballX <= 0 || ballX >= 380) speedX *= -1;
+            if(ballY <= 0) speedY *= -1;
+
+            blocks.forEach(b => {
+                if(isHit(ballX,ballY,20,20,b.x,b.y,b.w,b.h)){
+                    speedY *= -1;
+                }
+            });
+
+            if(ballY >= 480) {
+                alert('游戏结束！得分：' + score);
+                ballX = 190;
+                ballY = 50;
+                speedY = 4;
+                score = 0;
+                scoreText.innerText = '分数：' + score;
+            }
+
+            if(ballY >= 465 && ballX > paddleX && ballX < paddleX + 80){
+                speedY *= -1;
+                score++;
+                scoreText.innerText = '分数：' + score;
+            }
+
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    <\/script>
+</body>
+</html>`;
+
+        const codeEditor = document.getElementById('codeEditor');
+        const runBtn = document.getElementById('runBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const gameFrame = document.getElementById('gameFrame');
+
+        window.onload = function(){
+            codeEditor.value = defaultCode;
+            runCode();
+        }
+
+        function runCode(){
+            const code = codeEditor.value;
+            const frameDoc = gameFrame.contentDocument || gameFrame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(code);
+            frameDoc.close();
+        }
+
+        function resetCode(){
+            codeEditor.value = defaultCode;
+            runCode();
+        }
+
+        runBtn.addEventListener('click', runCode);
+        resetBtn.addEventListener('click', resetCode);
+</script>
+</body>
+</html>

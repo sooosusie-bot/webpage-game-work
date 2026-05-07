@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三关虐心平台跳跃</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #0d0d0d;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        #gameCanvas {
+            border: 3px solid #ff3c6e;
+            border-radius: 5px;
+            background: #121212;
+            box-shadow: 0 0 25px rgba(255, 60, 110, 0.4);
+        }
+
+        .game-header {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .game-title {
+            color: #ff3c6e;
+            font-size: 26px;
+            text-shadow: 0 0 8px #ff3c6e;
+            margin-bottom: 5px;
+        }
+
+        .game-tip {
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <h2 class="game-title">三关虐心平台跳跃（可通关版）</h2>
+        <p class="game-tip">方向键移动 | 空格重启 | 3关渐进难度 | 掌握节奏就能过</p>
+    </div>
+    <canvas id="gameCanvas" width="850" height="550"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ==================== 玩家配置 ====================
+        const player = {
+            x: 40,
+            y: 500,
+            width: 24,
+            height: 30,
+            speed: 4.2,
+            jumpPower: 11.2,
+            gravity: 0.58,
+            velY: 0,
+            isJumping: true,
+            color: '#00e1ff'
+        };
+
+        // 按键控制
+        const keys = { up: false, left: false, right: false };
+
+        // ==================== 三关关卡数据 ====================
+        let currentLevel = 1;
+        const levels = [
+            // 【第1关：新手入门 - 移动落石陷阱】
+            {
+                platforms: [
+                    { x: 0, y: 530, width: 120, height: 20 }, // 起点
+                    { x: 180, y: 480, width: 60, height: 15 },
+                    { x: 280, y: 430, width: 50, height: 15 },
+                    { x: 380, y: 380, width: 70, height: 15 },
+                    { x: 500, y: 330, width: 50, height: 15 },
+                    { x: 600, y: 280, width: 60, height: 15 },
+                    { x: 720, y: 230, width: 100, height: 15 } // 终点平台
+                ],
+                movingTraps: [
+                    { x: 230, y: 400, w: 18, h: 18, speed: 3, minY: 430, maxY: 500 },
+                    { x: 330, y: 350, w: 18, h: 18, speed: 3.5, minY: 380, maxY: 450 },
+                    { x: 430, y: 300, w: 18, h: 18, speed: 3, minY: 330, maxY: 400 }
+                ],
+                spikeTraps: [],
+                goal: { x: 750, y: 190, w: 40, h: 50 }
+            },
+
+            // 【第2关：进阶挑战 - 尖刺+激光】
+            {
+                platforms: [
+                    { x: 0, y: 530, width: 100, height: 20 },
+                    { x: 160, y: 470, width: 45, height: 15 },
+                    { x: 240, y: 410, width: 40, height: 15 },
+                    { x: 180, y: 350, width: 50, height: 15 },
+                    { x: 290, y: 290, width: 130, height: 15 },
+                    { x: 450, y: 290, width: 40, height: 15 },
+                    { x: 540, y: 230, width: 45, height: 15 },
+                    { x: 630, y: 170, width: 50, height: 15 },
+                    { x: 730, y: 110, width: 90, height: 15 }
+                ],
+                movingTraps: [],
+                spikeTraps: [
+                    { x: 170, y: 450, w: 22, h: 20 },
+                    { x: 245, y: 390, w: 22, h: 20 },
+                    { x: 185, y: 330, w: 22, h: 20 },
+                    { x: 455, y: 270, w: 22, h: 20 }
+                ],
+                lasers: [
+                    { x: 130, y: 410, w: 6, h: 120 },
+                    { x: 350, y: 200, w: 6, h: 90 }
+                ],
+                goal: { x: 760, y: 70, w: 40, h: 50 }
+            },
+
+            // 【第3关：终极挑战 - 全陷阱组合】
+            {
+                platforms: [
+                    { x: 0, y: 530, width: 90, height: 20 },
+                    { x: 150, y: 480, width: 40, height: 15 },
+                    { x: 230, y: 420, width: 35, height: 15 },
+                    { x: 170, y: 360, width: 45, height: 15 },
+                    { x: 270, y: 300, width: 30, height: 15 },
+                    { x: 370, y: 260, width: 100, height: 15 },
+                    { x: 500, y: 260, width: 35, height: 15 },
+                    { x: 590, y: 210, width: 40, height: 15 },
+                    { x: 520, y: 160, width: 35, height: 15 },
+                    { x: 620, y: 120, width: 40, height: 15 },
+                    { x: 720, y: 80, width: 100, height: 15 }
+                ],
+                movingTraps: [
+                    { x: 200, y: 400, w: 16, h: 16, speed: 4, minY: 360, maxY: 480 },
+                    { x: 320, y: 280, w: 16, h: 16, speed: 4.5, minY: 230, maxY: 300 },
+                    { x: 550, y: 180, w: 16, h: 16, speed: 5, minY: 130, maxY: 210 }
+                ],
+                spikeTraps: [
+                    { x: 155, y: 460, w: 20, h: 18 },
+                    { x: 235, y: 400, w: 20, h: 18 },
+                    { x: 175, y: 340, w: 20, h: 18 },
+                    { x: 275, y: 280, w: 20, h: 18 },
+                    { x: 505, y: 240, w: 20, h: 18 }
+                ],
+                lasers: [
+                    { x: 120, y: 430, w: 5, h: 100 },
+                    { x: 340, y: 200, w: 5, h: 60 },
+                    { x: 670, y: 0, w: 5, h: 80 }
+                ],
+                goal: { x: 750, y: 40, w: 40, h: 50 }
+            }
+        ];
+
+        // 游戏状态
+        let gameOver = false;
+        let gameWin = false;
+        let deathCount = 0;
+
+        // ==================== 键盘事件 ====================
+        document.addEventListener('keydown', (e) => {
+            if(gameOver || gameWin) {
+                if(e.key === ' ') restartGame();
+                return;
+            }
+            switch(e.key) {
+                case 'ArrowUp': keys.up = true; break;
+                case 'ArrowLeft': keys.left = true; break;
+                case 'ArrowRight': keys.right = true; break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': keys.up = false; break;
+                case 'ArrowLeft': keys.left = false; break;
+                case 'ArrowRight': keys.right = false; break;
+            }
+        });
+
+        // 碰撞检测
+        function checkCollision(a, b) {
+            return a.x < b.x + (b.w || b.width) &&
+                   a.x + player.width > b.x &&
+                   a.y < b.y + (b.h || b.height) &&
+                   a.y + player.height > b.y;
+        }
+
+        // 重启游戏
+        function restartGame() {
+            player.x = 40;
+            player.y = 500;
+            player.velY = 0;
+            player.isJumping = true;
+            gameOver = false;
+            gameWin = false;
+            deathCount++;
+        }
+
+        // 进入下一关
+        function nextLevel() {
+            if(currentLevel < 3) {
+                currentLevel++;
+                player.x = 40;
+                player.y = 500;
+                player.velY = 0;
+                player.isJumping = true;
+                gameWin = false;
+            }
+        }
+
+        // ==================== 绘制游戏 ====================
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const level = levels[currentLevel - 1];
+
+            // 绘制平台
+            ctx.fillStyle = '#444';
+            level.platforms.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+                ctx.strokeStyle = '#666';
+                ctx.strokeRect(p.x, p.y, p.width, p.height);
+            });
+
+            // 绘制移动陷阱
+            if(level.movingTraps) {
+                level.movingTraps.forEach(t => {
+                    ctx.fillStyle = '#ff3c6e';
+                    ctx.shadowColor = '#ff3c6e';
+                    ctx.shadowBlur = 10;
+                    ctx.fillRect(t.x, t.y, t.w, t.h);
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+            // 绘制尖刺
+            if(level.spikeTraps) {
+                level.spikeTraps.forEach(t => {
+                    ctx.fillStyle = '#ff3c6e';
+                    ctx.beginPath();
+                    ctx.moveTo(t.x, t.y + t.h);
+                    ctx.lineTo(t.x + t.w/2, t.y);
+                    ctx.lineTo(t.x + t.w, t.y + t.h);
+                    ctx.closePath();
+                    ctx.fill();
+                });
+            }
+
+            // 绘制激光
+            if(level.lasers) {
+                level.lasers.forEach(l => {
+                    ctx.fillStyle = 'rgba(255,60,110,0.8)';
+                    ctx.fillRect(l.x, l.y, l.w, l.h);
+                });
+            }
+
+            // 绘制终点大门
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(level.goal.x, level.goal.y, level.goal.w, level.goal.h);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(level.goal.x, level.goal.y, level.goal.w, level.goal.h);
+
+            // 绘制玩家
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
+
+            // UI文字
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px Arial';
+            ctx.fillText(`第 ${currentLevel} 关`, 20, 30);
+            ctx.fillText(`死亡: ${deathCount}`, 120, 30);
+
+            if(gameOver) {
+                ctx.fillStyle = '#ff3c6e';
+                ctx.font = '50px bold Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('你挂了！', canvas.width/2, canvas.height/2 - 30);
+                ctx.font = '22px Arial';
+                ctx.fillText('按【空格】重来', canvas.width/2, canvas.height/2 + 20);
+            }
+
+            if(gameWin) {
+                if(currentLevel < 3) {
+                    ctx.fillStyle = '#00ff88';
+                    ctx.font = '40px bold Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`第${currentLevel}关通关！`, canvas.width/2, canvas.height/2 - 30);
+                    ctx.font = '22px Arial';
+                    ctx.fillText('按【空格】进入下一关', canvas.width/2, canvas.height/2 + 20);
+                } else {
+                    ctx.fillStyle = '#00ff88';
+                    ctx.font = '50px bold Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('恭喜！全部通关！', canvas.width/2, canvas.height/2 - 30);
+                    ctx.font = '24px Arial';
+                    ctx.fillText(`总死亡次数: ${deathCount}`, canvas.width/2, canvas.height/2 + 20);
+                }
+            }
+        }
+
+        // ==================== 游戏逻辑更新 ====================
+        function updateGame() {
+            if(gameOver || gameWin) return;
+            const level = levels[currentLevel - 1];
+
+            // 重力
+            player.velY += player.gravity;
+
+            // 移动
+            if(keys.left && player.x > 0) player.x -= player.speed;
+            if(keys.right && player.x + player.width < canvas.width) player.x += player.speed;
+            
+            // 跳跃
+            if(keys.up && !player.isJumping) {
+                player.velY = -player.jumpPower;
+                player.isJumping = true;
+            }
+
+            // 更新位置
+            player.y += player.velY;
+            player.isJumping = true;
+
+            // 平台碰撞
+            level.platforms.forEach(platform => {
+                if(checkCollision(player, platform) && 
+                   player.y + player.height < platform.y + 10 && 
+                   player.velY > 0) {
+                    player.y = platform.y - player.height;
+                    player.velY = 0;
+                    player.isJumping = false;
+                }
+            });
+
+            // 移动陷阱
+            if(level.movingTraps) {
+                level.movingTraps.forEach(trap => {
+                    trap.y += trap.speed;
+                    if(trap.y > trap.maxY) trap.speed = -Math.abs(trap.speed);
+                    if(trap.y < trap.minY) trap.speed = Math.abs(trap.speed);
+                    if(checkCollision(player, trap)) gameOver = true;
+                });
+            }
+
+            // 尖刺/激光碰撞
+            if(level.spikeTraps) level.spikeTraps.forEach(t => checkCollision(player,t) && (gameOver=true));
+            if(level.lasers) level.lasers.forEach(l => checkCollision(player,l) && (gameOver=true));
+
+            // 终点判定
+            if(checkCollision(player, level.goal)) {
+                gameWin = true;
+                if(currentLevel < 3) {
+                    document.addEventListener('keydown', function next(e) {
+                        if(e.key === ' ') {
+                            nextLevel();
+                            document.removeEventListener('keydown', next);
+                        }
+                    });
+                }
+            }
+
+            // 掉落死亡
+            if(player.y > canvas.height) gameOver = true;
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            updateGame();
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>

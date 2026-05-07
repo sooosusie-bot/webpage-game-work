@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>三丽鸥明星音游 - 编程学习教程</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #f9f2fc;
+        }
+
+        /* 顶部标题 */
+        .header {
+            text: center;
+            padding: 20px;
+            background: linear-gradient(90deg, #ffbce3, #d9b8ff);
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            border-bottom: 5px dashed #ffffff88;
+            text-shadow: 2px 2px 4px #00000022;
+        }
+
+        /* 游戏介绍 */
+        .intro {
+            max-width: 1400px;
+            margin: 15px auto;
+            padding: 20px 30px;
+            background: #fff;
+            border-radius: 15px;
+            border: 3px solid #f4b3e4;
+            color: #cd5c9f;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .intro h3 {
+            margin-bottom: 10px;
+            color: #e278b9;
+            font-size: 22px;
+        }
+
+        /* 难度选择 */
+        .difficulty {
+            text-align: center;
+            margin: 10px auto;
+            max-width: 600px;
+        }
+        .difficulty button {
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #easy { background: #a8e6cf; color: white; }
+        #normal { background: #ffd983; color: white; }
+        #hard { background: #ff88a0; color: white; }
+        .difficulty button.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        /* 主容器 */
+        .container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            gap: 25px;
+            padding: 25px;
+        }
+
+        /* 游戏区域 */
+        .game-area {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(to bottom, #ffe5f7, #f0d9ff);
+            border-radius: 20px;
+            border: 4px solid #e2a2ff;
+            box-shadow: 0 0 25px rgba(226, 162, 255, 0.3);
+        }
+
+        .game-title {
+            font-size: 32px;
+            color: #d16dbe;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 3px #fff;
+        }
+
+        .score-box {
+            font-size: 28px;
+            color: #b753b7;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* 音游主面板 */
+        #game {
+            width: 460px;
+            height: 650px;
+            background: #fff;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 5px solid #e2a2ff;
+            box-shadow: 0 0 25px rgba(209, 109, 190, 0.4);
+        }
+
+        /* 4条轨道 */
+        .lane {
+            width: 115px;
+            height: 100%;
+            float: left;
+            border-right: 3px dashed #e2a2ff;
+            position: relative;
+        }
+        .lane:nth-child(1) { background: #fff9fc; }
+        .lane:nth-child(2) { background: #fffcfd; }
+        .lane:nth-child(3) { background: #fcfaff; }
+        .lane:nth-child(4) { background: #fafffd; }
+        .lane:last-child { border-right: none; }
+
+        /* 键盘提示 */
+        .key-tip {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #d16dbe;
+            pointer-events: none;
+        }
+
+        /* 判定线 */
+        .hit-line {
+            width: 100%;
+            height: 16px;
+            background: linear-gradient(90deg, #ff9ed6, #d9b3ff);
+            position: absolute;
+            bottom: 70px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px #ff9ed6;
+        }
+
+        /* 判定文字动画 */
+        .judge {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 42px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: judgeAnim 1s forwards;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+        .perfect { color: #ff38a8; }
+        .great { color: #55d6ff; }
+        .miss { color: #ff5555; }
+        @keyframes judgeAnim {
+            0% { opacity:1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity:0; transform: translate(-50%, -70%) scale(0.8); }
+        }
+
+        /* 音符 */
+        .note {
+            width: 75px;
+            height: 75px;
+            position: absolute;
+            left: 20px;
+            border-radius: 50%;
+            animation: fall 1.8s linear forwards;
+            filter: drop-shadow(0 0 8px rgba(255,180,228,0.6));
+            transition: all 0.2s ease;
+        }
+        .note.hit {
+            transform: scale(0.2);
+            opacity: 0;
+        }
+        @keyframes fall {
+            0%   { top: -90px; }
+            100% { top: 490px; }
+        }
+
+        /* 8种三丽鸥皮肤 ✨ */
+        .note1 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471528.png') center/cover; }
+        .note2 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471542.png') center/cover; }
+        .note3 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471534.png') center/cover; }
+        .note4 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471520.png') center/cover; }
+        .note5 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471510.png') center/cover; }
+        .note6 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471494.png') center/cover; }
+        .note7 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471486.png') center/cover; }
+        .note8 { background: url('https://cdn-icons-png.flaticon.com/512/4471/4471478.png') center/cover; }
+
+        /* 按钮 */
+        .btns { margin-top: 25px; }
+        button {
+            padding: 14px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #ff9ed6, #d9b3ff);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            transform: scale(1.08);
+        }
+
+        /* 代码编辑区 */
+        .code-area {
+            flex: 1.2;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 20px;
+            border: 4px solid #e2a2ff;
+        }
+        .code-title {
+            font-size: 26px;
+            color: #d16dbe;
+            margin-bottom: 15px;
+        }
+        .tip {
+            font-size: 16px;
+            color: #b579b5;
+            margin-bottom: 15px;
+        }
+        textarea {
+            flex: 1;
+            padding: 20px;
+            border: 3px solid #e2a2ff;
+            border-radius: 15px;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            background: #fefaff;
+            line-height: 1.6;
+        }
+        #runBtn {
+            margin-top: 20px;
+            background: linear-gradient(90deg, #91e4d0, #78d6c0);
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">🎀 三丽鸥明星音游 - 编程实践教程 🎀</div>
+
+<div class="intro">
+    <h3>📖 游戏介绍</h3>
+    <p>🎵 仿照热门音游制作的<strong>三丽鸥主题音乐游戏</strong>，HTML+CSS+JS实现！</p>
+    <p>✨ 8种三丽鸥皮肤 | ASDF键盘操作 | PERFECT/GREAT判定 | 难度选择</p>
+    <p>🎮 玩法：选择难度 → 开始游戏 → 按ASDF键打击音符 | 右侧可修改代码实时运行！</p>
+</div>
+
+<div class="difficulty">
+    <button id="easy" class="active" onclick="setDifficulty(1)">简单 🟢</button>
+    <button id="normal" onclick="setDifficulty(2)">普通 🟡</button>
+    <button id="hard" onclick="setDifficulty(3)">困难 🔴</button>
+</div>
+
+<div class="container">
+    <div class="game-area">
+        <h2 class="game-title">🎵 三丽鸥明星音游 🎵</h2>
+        <div class="score-box">分数：<span id="score">0</span></div>
+        <div id="game">
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="lane"></div>
+            <div class="hit-line"></div>
+            <div class="key-tip">A&nbsp;&nbsp;&nbsp;&nbsp;S&nbsp;&nbsp;&nbsp;&nbsp;D&nbsp;&nbsp;&nbsp;&nbsp;F</div>
+        </div>
+        <div class="btns">
+            <button onclick="startGame()">开始游戏</button>
+            <button onclick="resetGame()">重新开始</button>
+        </div>
+    </div>
+
+    <div class="code-area">
+        <h3 class="code-title">✏️ 代码编辑器（可修改）</h3>
+        <p class="tip">👉 修改代码后点【运行】，立即生效！边玩边学超轻松～</p>
+        <textarea id="codeEditor" spellcheck="false">
+// 三丽鸥音游 - 学习用代码
+let score = 0;
+let gameRunning = false;
+let difficulty = 1;
+let speedConfig = {1:1200, 2:900, 3:600};
+
+// 开始游戏
+function startGame() {
+    if(gameRunning) return;
+    gameRunning = true;
+    score = 0;
+    updateScore();
+    
+    setInterval(() => {
+        if(!gameRunning) return;
+        createNote();
+    }, speedConfig[difficulty]);
+}
+
+// 生成音符
+function createNote() {
+    const lanes = document.querySelectorAll('.lane');
+    const randomLane = Math.floor(Math.random() * lanes.length);
+    const skin = Math.floor(Math.random() * 8) + 1;
+    
+    const note = document.createElement('div');
+    note.classList.add('note', `note${skin}`);
+    note.dataset.lane = randomLane;
+    lanes[randomLane].appendChild(note);
+    
+    setTimeout(() => {
+        if(note.parentElement) showJudge('miss');
+        note.remove();
+    }, 1800);
+}
+
+// 更新分数
+function updateScore() {
+    document.getElementById('score').innerText = score;
+}
+
+// 重置
+function resetGame() {
+    gameRunning = false;
+    score = 0;
+    updateScore();
+    document.querySelectorAll('.note').forEach(n => n.remove());
+}
+        </textarea>
+        <button id="runBtn" onclick="runCode()">运行代码</button>
+    </div>
+</div>
+
+<audio id="bgm" loop>
+    <source src="https://music.sabaothcloud.com/cute.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    let score = 0;
+    let gameRunning = false;
+    let difficulty = 1;
+    const bgm = document.getElementById('bgm');
+    const speedMap = {1:1200, 2:900, 3:600};
+
+    // 难度
+    function setDifficulty(level) {
+        difficulty = level;
+        document.querySelectorAll('.difficulty button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // 开始
+    function startGame() {
+        if(gameRunning) return;
+        bgm.play().catch(()=>{});
+        gameRunning = true;
+        score = 0;
+        updateScore();
+        
+        const t = setInterval(()=>{
+            if(!gameRunning){clearInterval(t);return;}
+            createNote();
+        }, speedMap[difficulty]);
+    }
+
+    // 生成音符
+    function createNote() {
+        const lanes = document.querySelectorAll('.lane');
+        const l = Math.floor(Math.random()*4);
+        const skin = Math.floor(Math.random()*8)+1;
+        const n = document.createElement('div');
+        n.classList.add('note',`note${skin}`);
+        n.dataset.lane = l;
+        lanes[l].appendChild(n);
+        
+        setTimeout(()=>{
+            if(n.parentElement) showJudge('miss');
+            n.remove();
+        },1800);
+    }
+
+    // 判定显示
+    function showJudge(type) {
+        const j = document.createElement('div');
+        j.className = 'judge ' + type;
+        j.innerText = type.toUpperCase();
+        document.getElementById('game').appendChild(j);
+        setTimeout(()=>j.remove(), 1000);
+    }
+
+    // 打击逻辑
+    function hitNote(laneIndex) {
+        if(!gameRunning) return;
+        const notes = document.querySelectorAll(`.note[data-lane="${laneIndex}"]`);
+        if(!notes.length) return;
+        
+        const note = notes[notes.length-1];
+        const top = parseInt(note.style.top || 490);
+        
+        if(top >= 450 && top <= 530) {
+            showJudge('perfect');
+            score += 15;
+        } else if(top >= 400 && top <= 580) {
+            showJudge('great');
+            score += 8;
+        } else {
+            showJudge('miss');
+            return;
+        }
+        
+        note.classList.add('hit');
+        setTimeout(()=>note.remove(), 200);
+        updateScore();
+    }
+
+    // 键盘 ASDF
+    document.addEventListener('keydown', (e) => {
+        if(['a','s','d','f'].includes(e.key.toLowerCase())) {
+            const idx = ['a','s','d','f'].indexOf(e.key.toLowerCase());
+            hitNote(idx);
+        }
+    });
+
+    // 更新分数
+    function updateScore() {
+        document.getElementById('score').innerText = score;
+    }
+
+    // 重置
+    function resetGame() {
+        gameRunning = false;
+        score = 0;
+        updateScore();
+        document.querySelectorAll('.note').forEach(i=>i.remove());
+    }
+
+    // 运行代码
+    function runCode() {
+        const s = document.createElement('script');
+        s.innerHTML = document.getElementById('codeEditor').value;
+        document.body.appendChild(s);
+        alert("✅ 代码运行成功！");
+    }
+</script>
+</body>
+</html>

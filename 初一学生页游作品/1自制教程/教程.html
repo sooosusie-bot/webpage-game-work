@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>少儿编程实践乐园</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        /* 主布局：代码区 + 预览区 */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            height: 600px;
+        }
+
+        /* 代码面板 */
+        .code-panel {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        #codeArea {
+            flex: 1;
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            font-family: "Consolas", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #fafafa;
+        }
+
+        .btn-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        #resetBtn {
+            background: #95a5a6;
+        }
+
+        #resetBtn:hover {
+            background: #7f8c8d;
+        }
+
+        /* 预览面板 */
+        .preview-panel {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #previewFrame {
+            flex: 1;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+
+        /* 游戏选择导航 */
+        .game-select {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .game-item {
+            padding: 10px 20px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .game-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .game-item:hover {
+            transform: translateY(-3px);
+        }
+
+        /* 教程说明 */
+        .tutorial {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .tutorial h3 {
+            color: #3498db;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 HTML+CSS 编程实践游戏</h1>
+            <p>修改左侧代码 → 点击运行 → 观察效果，零基础轻松学编程</p>
+        </div>
+
+        <!-- 游戏选择 -->
+        <div class="game-select">
+            <div class="game-item active" data-game="ball">弹跳小球</div>
+            <div class="game-item" data-game="snake">简易贪吃蛇</div>
+            <div class="game-item" data-game="brick">打砖块</div>
+        </div>
+
+        <!-- 教程说明 -->
+        <div class="tutorial" id="tutorialBox">
+            <h3>📝 弹跳小球 - 教程说明</h3>
+            <p>1. 修改 background 可以改变小球颜色<br>2. 修改 width/height 可以改变小球大小<br>3. 修改 animation 时间可以控制速度</p>
+        </div>
+
+        <!-- 主布局 -->
+        <div class="main-layout">
+            <!-- 代码编辑区 -->
+            <div class="code-panel">
+                <div class="panel-title">✍️ 代码编辑区</div>
+                <textarea id="codeArea"></textarea>
+                <div class="btn-group">
+                    <button id="runBtn">▶️ 运行代码</button>
+                    <button id="resetBtn">🔄 重置代码</button>
+                </div>
+            </div>
+
+            <!-- 预览区 -->
+            <div class="preview-panel">
+                <div class="panel-title">🎯 实时运行预览</div>
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 内置3个游戏的基础代码
+        const gameCodes = {
+            ball: {
+                code: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>弹跳小球</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f8ff;
+        }
+        .ball {
+            width: 60px;
+            height: 60px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            animation: bounce 1s infinite alternate;
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-200px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ball"></div>
+</body>
+</html>`,
+                tutorial: `📝 弹跳小球 - 教程说明
+1. 修改 background 可以改变小球颜色
+2. 修改 width/height 可以改变小球大小
+3. 修改 animation 时间（1s）可以控制弹跳速度
+4. 修改 translateY(-200px) 可以改变弹跳高度`
+            },
+            snake: {
+                code: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>简易贪吃蛇</title>
+    <style>
+        body {
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .snake {
+            width: 150px;
+            height: 20px;
+            background: #2ecc71;
+            border-radius: 5px;
+            position: relative;
+            animation: move 3s linear infinite;
+        }
+        .snake::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #27ae60;
+            border-radius: 50%;
+        }
+        @keyframes move {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(150px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="snake"></div>
+</body>
+</html>`,
+                tutorial: `📝 简易贪吃蛇 - 教程说明
+1. 修改 background 可以改变蛇身颜色
+2. 修改 width 可以改变蛇的长度
+3. 修改 animation 时间可以控制移动速度
+4. 修改 translateX 数值可以改变移动距离`
+            },
+            brick: {
+                code: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>打砖块</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+        }
+        .brick {
+            width: 80px;
+            height: 30px;
+            background: #9b59b6;
+            margin: 5px;
+            border-radius: 3px;
+        }
+        .ball {
+            width: 20px;
+            height: 20px;
+            background: #f1c40f;
+            border-radius: 50%;
+            margin-top: 50px;
+            animation: shoot 2s linear infinite;
+        }
+        @keyframes shoot {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-300px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="brick"></div>
+    <div class="brick"></div>
+    <div class="ball"></div>
+</body>
+</html>`,
+                tutorial: `📝 打砖块 - 教程说明
+1. 复制 brick 可以增加砖块数量
+2. 修改 ball 的颜色可以改变子弹颜色
+3. 修改 animation 时间可以控制发射速度
+4. 修改 translateY(-300px) 可以改变发射距离`
+            }
+        };
+
+        // DOM元素
+        const codeArea = document.getElementById('codeArea');
+        const previewFrame = document.getElementById('previewFrame');
+        const runBtn = document.getElementById('runBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const gameItems = document.querySelectorAll('.game-item');
+        const tutorialBox = document.getElementById('tutorialBox');
+
+        // 当前选中的游戏
+        let currentGame = 'ball';
+
+        // 初始化加载默认游戏
+        function loadGame(game) {
+            currentGame = game;
+            codeArea.value = gameCodes[game].code;
+            tutorialBox.innerHTML = gameCodes[game].tutorial.replace(/\n/g, '<br>');
+            runCode();
+        }
+
+        // 运行代码
+        function runCode() {
+            const frameDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(codeArea.value);
+            frameDoc.close();
+        }
+
+        // 事件绑定
+        runBtn.addEventListener('click', runCode);
+        resetBtn.addEventListener('click', () => loadGame(currentGame));
+        gameItems.forEach(item => {
+            item.addEventListener('click', () => {
+                gameItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                loadGame(item.dataset.game);
+            });
+        });
+
+        // 初始加载
+        loadGame('ball');
+    </script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>猎奇黑洞吞噬 - 网页版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 游戏容器 */
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 3px solid #7700ff;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* 画布 */
+        #gameCanvas {
+            display: block;
+        }
+
+        /* 界面通用样式 */
+        .ui-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 文字样式 */
+        .title {
+            font-size: 60px;
+            color: #a742ff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px #a742ff;
+        }
+
+        .tip {
+            font-size: 24px;
+            margin: 12px 0;
+        }
+
+        .start-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 26px;
+            background: #7700ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .start-btn:hover {
+            background: #9933ff;
+            transform: scale(1.08);
+        }
+
+        /* 暂停界面 */
+        #pausePanel {
+            background: rgba(0,0,0,0.95);
+        }
+
+        .pause-title {
+            font-size: 50px;
+            color: #ff3366;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- 开始界面 -->
+        <div id="startPanel" class="ui-panel">
+            <h1 class="title">猎奇黑洞吞噬</h1>
+            <p class="tip" style="color:#fff">操作：W上 A左 S下 D右 移动黑洞</p>
+            <p class="tip" style="color:#fffa00">游戏目标：吃掉黄色光点得分</p>
+            <p class="tip" style="color:#ff3333">危险：碰到红色病毒就失败！</p>
+            <p class="tip" style="color:#aaa">按 P 键暂停游戏</p>
+            <button class="start-btn" onclick="startGame()">开始游戏</button>
+        </div>
+
+        <!-- 暂停界面 -->
+        <div id="pausePanel" class="ui-panel hidden">
+            <h1 class="pause-title">游戏已暂停</h1>
+            <p class="tip">按 P 键继续游戏</p>
+        </div>
+
+        <!-- 结束界面 -->
+        <div id="gameoverPanel" class="ui-panel hidden">
+            <h1 class="title" style="color:#ff3333">游戏结束</h1>
+            <p class="tip" id="finalScore">最终得分：0</p>
+            <p class="tip" style="color:#aaa">点击屏幕重新开始</p>
+        </div>
+    </div>
+
+    <script>
+        // ========== 游戏基础配置 ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = 800;
+        const HEIGHT = 600;
+
+        // 游戏状态
+        let gameState = "start"; // start / playing / paused / gameover
+        let score = 0;
+
+        // 玩家（黑洞）
+        const player = {
+            x: WIDTH/2,
+            y: HEIGHT/2,
+            size: 40,
+            speed: 5,
+            color: "#a742ff"
+        };
+
+        // 按键控制
+        const keys = {
+            w: false, a: false, s: false, d: false
+        };
+
+        // 食物数组
+        let foods = [];
+        // 病毒数组
+        let viruses = [];
+
+        // ========== 生成游戏元素 ==========
+        function createFood() {
+            foods = [];
+            for(let i=0; i<18; i++){
+                foods.push({
+                    x: Math.random()*(WIDTH-40)+20,
+                    y: Math.random()*(HEIGHT-40)+20,
+                    size: Math.random()*7+5
+                });
+            }
+        }
+
+        function createViruses() {
+            viruses = [];
+            for(let i=0; i<7; i++){
+                viruses.push({
+                    x: Math.random()*(WIDTH-100)+50,
+                    y: Math.random()*(HEIGHT-100)+50,
+                    size: Math.random()*15+25,
+                    vx: (Math.random()>0.5 ? 1 : -1) * (Math.random()*2+1),
+                    vy: (Math.random()>0.5 ? 1 : -1) * (Math.random()*2+1)
+                });
+            }
+        }
+
+        // ========== 游戏控制 ==========
+        function startGame() {
+            gameState = "playing";
+            score = 0;
+            player.x = WIDTH/2;
+            player.y = HEIGHT/2;
+            player.size = 40;
+            createFood();
+            createViruses();
+            
+            document.getElementById('startPanel').classList.add('hidden');
+            document.getElementById('gameoverPanel').classList.add('hidden');
+        }
+
+        function gameOver() {
+            gameState = "gameover";
+            document.getElementById('finalScore').innerText = `最终得分：${score}`;
+            document.getElementById('gameoverPanel').classList.remove('hidden');
+        }
+
+        function togglePause() {
+            if(gameState === "playing"){
+                gameState = "paused";
+                document.getElementById('pausePanel').classList.remove('hidden');
+            }else if(gameState === "paused"){
+                gameState = "playing";
+                document.getElementById('pausePanel').classList.add('hidden');
+            }
+        }
+
+        // ========== 碰撞检测 ==========
+        function checkDistance(x1,y1,x2,y2){
+            return Math.hypot(x1-x2, y1-y2);
+        }
+
+        // ========== 绘制 ==========
+        function draw() {
+            // 清空画布
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+            if(gameState !== "playing") return;
+
+            // 绘制食物
+            ctx.fillStyle = "#fffa00";
+            foods.forEach(f => {
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // 绘制病毒
+            ctx.fillStyle = "#ff3333";
+            viruses.forEach(v => {
+                ctx.beginPath();
+                ctx.arc(v.x, v.y, v.size, 0, Math.PI*2);
+                ctx.fill();
+
+                // 病毒移动
+                v.x += v.vx;
+                v.y += v.vy;
+
+                // 边界反弹
+                if(v.x < v.size || v.x > WIDTH-v.size) v.vx *= -1;
+                if(v.y < v.size || v.y > HEIGHT-v.size) v.vy *= -1;
+
+                // 病毒碰撞检测
+                if(checkDistance(player.x,player.y, v.x,v.y) < player.size + v.size - 10){
+                    gameOver();
+                }
+            });
+
+            // 绘制玩家（猎奇黑洞）
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI*2);
+            ctx.fill();
+
+            // 黑洞内核
+            ctx.fillStyle = "#000";
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size-15, 0, Math.PI*2);
+            ctx.fill();
+
+            // 吃食物
+            foods.forEach((f, index) => {
+                if(checkDistance(player.x,player.y, f.x,f.y) < player.size + f.size){
+                    score++;
+                    player.size += 0.8;
+                    // 重新生成食物
+                    foods[index] = {
+                        x: Math.random()*(WIDTH-40)+20,
+                        y: Math.random()*(HEIGHT-40)+20,
+                        size: Math.random()*7+5
+                    };
+                }
+            });
+
+            // ========== 永久显示 积分 + 操作教程（大白话版） ==========
+            ctx.fillStyle = "#fff";
+            ctx.font = "26px Microsoft YaHei";
+            ctx.fillText(`积分：${score}`, 20, 40);
+            ctx.fillText(`W上 A左 S下 D右 移动`, 20, 80);
+            ctx.fillText(`P键：暂停`, 20, 120);
+            ctx.fillStyle = "#fffa00";
+            ctx.fillText(`吃掉黄色光点得分`, 20, 160);
+            ctx.fillStyle = "#ff3333";
+            ctx.fillText(`避开红色病毒`, 20, 200);
+        }
+
+        // ========== 玩家移动 ==========
+        function updatePlayer() {
+            if(gameState !== "playing") return;
+
+            if(keys.w && player.y > player.size) player.y -= player.speed;
+            if(keys.s && player.y < HEIGHT-player.size) player.y += player.speed;
+            if(keys.a && player.x > player.size) player.x -= player.speed;
+            if(keys.d && player.x < WIDTH-player.size) player.x += player.speed;
+        }
+
+        // ========== 按键监听 ==========
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()){
+                case 'w': keys.w = true; break;
+                case 's': keys.s = true; break;
+                case 'a': keys.a = true; break;
+                case 'd': keys.d = true; break;
+                case 'p': togglePause(); break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()){
+                case 'w': keys.w = false; break;
+                case 's': keys.s = false; break;
+                case 'a': keys.a = false; break;
+                case 'd': keys.d = false; break;
+            }
+        });
+
+        // 结束界面点击重开
+        document.addEventListener('click', () => {
+            if(gameState === "gameover") startGame();
+        });
+
+        // ========== 游戏循环 ==========
+        function gameLoop() {
+            updatePlayer();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 启动游戏
+        gameLoop();
+    </script>
+</body>
+</html>

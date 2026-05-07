@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<!-- saved from url=(0071)file:///C:/Users/admin/Downloads/%E6%9C%AA%E5%91%BD%E5%90%8D%20(1).html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硬核写实射击 | 可编辑代码</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background: #0b0b0d;
+  color: #e2e2e2;
+  font-family: "Segoe UI",sans-serif;
+  overflow: hidden;
+}
+.wrap {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 左侧 游戏区域 硬核写实 */
+#gameBox {
+  flex: 2;
+  background: #121214;
+  position: relative;
+  overflow: hidden;
+  border-right: 2px solid #222;
+  cursor: crosshair;
+}
+/* 地面纹理质感 */
+#gameBox::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image: 
+  radial-gradient(#1f1f23 1px, transparent 1px);
+  background-size:24px 24px;
+  opacity:0.35;
+  pointer-events:none;
+}
+
+/* 玩家 硬核战术风格 */
+.player {
+  width: 42px;
+  height: 42px;
+  position: absolute;
+  background: #2b3035;
+  border: 2px solid #555c63;
+  border-radius: 4px;
+  box-shadow: 0 0 10px #111, inset 0 0 6px #3a4149;
+  transform-origin: center center;
+}
+/* 敌人 深色血腥写实 */
+.enemy {
+  width: 38px;
+  height: 38px;
+  position: absolute;
+  background: #4b1b1b;
+  border: 2px solid #7a2c2c;
+  border-radius: 3px;
+  box-shadow: 0 0 8px #200c0c;
+}
+/* 子弹 金属质感 */
+.bullet {
+  width: 7px;
+  height: 7px;
+  position: absolute;
+  background: #b8a98f;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #d4c2a2;
+}
+.ui-hint {
+  position:absolute;
+  top:15px;
+  left:15px;
+  font-size:13px;
+  color:#999;
+  z-index:10;
+  line-height:1.6;
+}
+
+/* 右侧代码面板 */
+.codeWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #161618;
+  padding:12px;
+}
+.codeTit {
+  font-size:14px;
+  color:#aaa;
+  margin-bottom:8px;
+}
+#codeArea {
+  flex:1;
+  background:#1e1e22;
+  border:1px solid #333;
+  color:#c5c8c6;
+  padding:10px;
+  font-size:12px;
+  line-height:1.5;
+  resize:none;
+  outline:none;
+}
+.runBtn {
+  margin-top:10px;
+  padding:9px 0;
+  background:#25303b;
+  border:1px solid #44505e;
+  color:#cbd5e0;
+  cursor:pointer;
+  border-radius:3px;
+  transition:0.2s;
+}
+.runBtn:hover{
+  background:#2f3c4a;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 左侧 游戏 -->
+  <div id="gameBox">
+    <div class="ui-hint">
+      WASD 移动<br>
+      鼠标瞄准 · 左键射击<br>
+      击杀敌方 · 避免接触
+    </div>
+    <div class="player" id="player" style="left: 292px; top: 252px;"></div>
+  </div>
+
+  <!-- 右侧 可编辑代码 -->
+  <div class="codeWrap">
+    <div class="codeTit">📃 编辑代码 → 点击运行重载游戏</div>
+    <textarea id="codeArea"></textarea>
+    <button class="runBtn" onclick="restartGameByCode()">修改并运行</button>
+  </div>
+</div>
+
+<script>
+// 全局变量
+let gameBox = document.getElementById('gameBox');
+let player = document.getElementById('player');
+let keys = {};
+let mouse = {x:0,y:0};
+
+// 游戏配置（可在右侧代码修改）
+let CONFIG = {
+  playerSpeed: 4,
+  bulletSpeed: 12,
+  enemySpeed: 1.6,
+  enemySpawnTime: 1200
+};
+
+let playerX = 300, playerY = 260;
+let bullets = [];
+let enemies = [];
+let gameTimer = null;
+
+// 初始化写入默认代码到编辑器
+const defaultCode = `// === 游戏配置 - 可自由修改 ===
+CONFIG.playerSpeed = 4;     // 玩家移动速度
+CONFIG.bulletSpeed = 12;    // 子弹速度
+CONFIG.enemySpeed = 1.6;    // 敌人追踪速度
+CONFIG.enemySpawnTime = 1200;// 敌人生成间隔(ms)
+
+// 额外可改：
+// 1. 修改玩家/敌人/子弹样式在CSS
+// 2. 可新增血量、分数、后坐力、更多敌人
+// 3. 修改移动、射击逻辑`;
+
+document.getElementById('codeArea').value = defaultCode;
+
+// 键盘监听
+window.addEventListener('keydown',e=>keys[e.key]=true);
+window.addEventListener('keyup',e=>keys[e.key]=false);
+
+// 鼠标瞄准
+gameBox.addEventListener('mousemove',e=>{
+  let rect = gameBox.getBoundingClientRect();
+  mouse.x = e.clientX - rect.left;
+  mouse.y = e.clientY - rect.top;
+});
+
+// 射击
+gameBox.addEventListener('click',shoot);
+
+// 玩家移动
+function movePlayer(){
+  if(keys['w']&&playerY>0) playerY -= CONFIG.playerSpeed;
+  if(keys['s']&&playerY<gameBox.clientHeight-42) playerY += CONFIG.playerSpeed;
+  if(keys['a']&&playerX>0) playerX -= CONFIG.playerSpeed;
+  if(keys['d']&&playerX<gameBox.clientWidth-42) playerX += CONFIG.playerSpeed;
+  player.style.left = playerX+'px';
+  player.style.top = playerY+'px';
+}
+
+// 发射子弹
+function shoot(){
+  let b = document.createElement('div');
+  b.className = 'bullet';
+  let startX = playerX + 21;
+  let startY = playerY + 21;
+  b.style.left = startX+'px';
+  b.style.top = startY+'px';
+  gameBox.appendChild(b);
+
+  let dx = mouse.x - startX;
+  let dy = mouse.y - startY;
+  let dis = Math.hypot(dx,dy);
+  let vx = dx/dis * CONFIG.bulletSpeed;
+  let vy = dy/dis * CONFIG.bulletSpeed;
+
+  bullets.push({el:b,x:startX,y:startY,vx,vy});
+}
+
+// 更新子弹
+function updateBullet(){
+  for(let i=bullets.length-1;i>=0;i--){
+    let b = bullets[i];
+    b.x += b.vx;
+    b.y += b.vy;
+    b.el.style.left = b.x+'px';
+    b.el.style.top = b.y+'px';
+    if(b.x<0||b.x>gameBox.clientWidth||b.y<0||b.y>gameBox.clientHeight){
+      b.el.remove();
+      bullets.splice(i,1);
+    }
+  }
+}
+
+// 生成敌人
+function spawnEnemy(){
+  let e = document.createElement('div');
+  e.className = 'enemy';
+  let x,y;
+  let side = Math.floor(Math.random()*4);
+  switch(side){
+    case 0:x=Math.random()*gameBox.clientWidth;y=-40;break;
+    case 1:x=gameBox.clientWidth+10;y=Math.random()*gameBox.clientHeight;break;
+    case 2:x=Math.random()*gameBox.clientWidth;y=gameBox.clientHeight+10;break;
+    case 3:x=-40;y=Math.random()*gameBox.clientHeight;break;
+  }
+  e.style.left=x+'px';
+  e.style.top=y+'px';
+  gameBox.appendChild(e);
+  enemies.push({el:e,x,y});
+}
+
+// 敌人追踪玩家
+function updateEnemy(){
+  for(let i=enemies.length-1;i>=0;i--){
+    let e = enemies[i];
+    let dx = playerX - e.x;
+    let dy = playerY - e.y;
+    let dis = Math.hypot(dx,dy);
+    e.x += dx/dis * CONFIG.enemySpeed;
+    e.y += dy/dis * CONFIG.enemySpeed;
+    e.el.style.left = e.x+'px';
+    e.el.style.top = e.y+'px';
+
+    // 撞到玩家 游戏重置
+    if(dis < 35){
+      alert('被敌人击中 · 任务失败');
+      fullReset();
+      return;
+    }
+  }
+}
+
+// 子弹碰撞敌人
+function collisionCheck(){
+  for(let i=bullets.length-1;i>=0;i--){
+    let b = bullets[i];
+    for(let j=enemies.length-1;j>=0;j--){
+      let e = enemies[j];
+      let d = Math.hypot(b.x-e.x,b.y-e.y);
+      if(d<22){
+        b.el.remove();
+        e.el.remove();
+        bullets.splice(i,1);
+        enemies.splice(j,1);
+        break;
+      }
+    }
+  }
+}
+
+// 游戏主循环
+function gameLoop(){
+  movePlayer();
+  updateBullet();
+  updateEnemy();
+  collisionCheck();
+  requestAnimationFrame(gameLoop);
+}
+
+// 全量重置游戏
+function fullReset(){
+  // 清空敌人子弹
+  bullets.forEach(b=>b.el.remove());
+  enemies.forEach(e=>e.el.remove());
+  bullets=[];enemies=[];
+  playerX=300;playerY=260;
+  // 清除定时器重建
+  clearInterval(gameTimer);
+  gameTimer = setInterval(spawnEnemy, CONFIG.enemySpawnTime);
+}
+
+// 运行编辑器代码 + 重载游戏
+function restartGameByCode(){
+  let code = document.getElementById('codeArea').value;
+  try{
+    eval(code);
+    fullReset();
+    alert('代码生效，游戏已重载');
+  }catch(err){
+    alert('代码错误：'+err.message);
+  }
+}
+
+// 启动游戏
+gameTimer = setInterval(spawnEnemy, CONFIG.enemySpawnTime);
+gameLoop();
+</script>
+
+
+</body></html>

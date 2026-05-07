@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>植物大战僵尸 - 可编辑版</title>
+    <style>
+        /* 全局布局：左侧游戏界面 + 右侧代码编辑器 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        /* 游戏区域 */
+        #game-area {
+            flex: 1;
+            background: #3a5f3a;
+            padding: 10px;
+            position: relative;
+            border-right: 3px solid #666;
+        }
+        /* 草坪网格 */
+        .lawn {
+            display: grid;
+            grid-template-rows: repeat(5, 100px);
+            gap: 5px;
+            width: 700px;
+            height: 520px;
+            background: #7cb342;
+            margin: 20px auto;
+            border: 2px solid #555;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: repeat(9, 70px);
+            gap: 5px;
+        }
+        .grid {
+            width: 70px;
+            height: 95px;
+            border: 1px dashed #444;
+            background: rgba(255,255,255,0.1);
+        }
+        /* 阳光样式 */
+        .sun {
+            width: 40px;
+            height: 40px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            position: absolute;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        /* 植物卡片栏 */
+        .plant-card {
+            display: flex;
+            gap: 10px;
+            margin: 10px 50px;
+        }
+        .card {
+            width: 80px;
+            height: 100px;
+            background: #ddd;
+            border: 2px solid #666;
+            text-align: center;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .card img {
+            width: 50px;
+            height: 50px;
+        }
+        /* 植物&僵尸样式 */
+        .plant {
+            width: 60px;
+            height: 80px;
+            position: absolute;
+            z-index: 10;
+        }
+        .zombie {
+            width: 70px;
+            height: 100px;
+            position: absolute;
+            z-index: 5;
+        }
+        /* 右侧代码编辑器 */
+        #code-editor {
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            color: #fff;
+        }
+        #code-area {
+            flex: 1;
+            padding: 15px;
+            font-size: 14px;
+            background: #2d2d2d;
+            color: #dcdcaa;
+            border: none;
+            resize: none;
+        }
+        #run-btn {
+            height: 50px;
+            background: #4caf50;
+            color: white;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+        }
+        #run-btn:hover {
+            background: #388e3c;
+        }
+        /* 游戏文字提示 */
+        #game-status {
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧：游戏运行界面 -->
+        <div id="game-area">
+            <div id="game-status">阳光：50 | 游戏进行中</div>
+            <!-- 植物选择卡片 -->
+            <div class="plant-card">
+                <div class="card" id="peashooter">
+                    <div>豌豆射手</div>
+                    <div>100阳光</div>
+                </div>
+                <div class="card" id="sunflower">
+                    <div>向日葵</div>
+                    <div>50阳光</div>
+                </div>
+            </div>
+            <!-- 草坪网格 -->
+            <div class="lawn" id="lawn"></div>
+        </div>
+
+        <!-- 右侧：代码编辑器 + 运行按钮 -->
+        <div id="code-editor">
+            <textarea id="code-area">
+// 你可以在这里修改游戏代码，修改后点击【重新运行游戏】生效
+// 示例：修改阳光生成速度、植物价格、僵尸速度等
+const GAME_CONFIG = {
+    startSun: 50,        // 初始阳光
+    sunSpawnTime: 3000,  // 阳光生成间隔(毫秒)
+    zombieSpawnTime: 5000, // 僵尸生成间隔
+    plantPrice: {
+        peashooter: 100,
+        sunflower: 50
+    }
+};
+            </textarea>
+            <button id="run-btn">重新运行游戏</button>
+        </div>
+    </div>
+
+    <script>
+        // 初始化游戏核心变量
+        let sunCount = 50;
+        let selectedPlant = null;
+        let gameOver = false;
+        const rows = 5;
+        const cols = 9;
+
+        // 1. 生成草坪网格
+        const lawn = document.getElementById('lawn');
+        for(let i=0; i<rows; i++){
+            const row = document.createElement('div');
+            row.className = 'row';
+            for(let j=0; j<cols; j++){
+                const grid = document.createElement('div');
+                grid.className = 'grid';
+                grid.dataset.row = i;
+                grid.dataset.col = j;
+                // 点击格子种植植物
+                grid.onclick = () => plantPlant(grid);
+                row.appendChild(grid);
+            }
+            lawn.appendChild(row);
+        }
+
+        // 2. 阳光系统：生成+收集
+        function spawnSun(){
+            if(gameOver) return;
+            const sun = document.createElement('div');
+            sun.className = 'sun';
+            sun.innerText = '+25';
+            // 随机位置生成阳光
+            sun.style.left = Math.random() * 600 + 50 + 'px';
+            sun.style.top = Math.random() * 400 + 100 + 'px';
+            document.getElementById('game-area').appendChild(sun);
+            // 点击收集阳光
+            sun.onclick = () => {
+                sunCount +=25;
+                updateStatus();
+                sun.remove();
+            }
+            // 阳光自动消失
+            setTimeout(()=>sun.remove(), 8000);
+        }
+        setInterval(spawnSun, 3000);
+
+        // 3. 植物选择
+        document.getElementById('peashooter').onclick = () => selectedPlant = 'peashooter';
+        document.getElementById('sunflower').onclick = () => selectedPlant = 'sunflower';
+
+        // 4. 种植植物
+        function plantPlant(grid){
+            if(gameOver || selectedPlant === null) return;
+            // 价格判定
+            const price = selectedPlant === 'peashooter' ? 100 : 50;
+            if(sunCount < price) return;
+            if(grid.querySelector('.plant')) return;
+
+            sunCount -= price;
+            updateStatus();
+            // 创建植物
+            const plant = document.createElement('div');
+            plant.className = 'plant';
+            plant.style.left = grid.offsetLeft + 5 + 'px';
+            plant.style.top = grid.offsetTop + 10 + 'px';
+            
+            // 植物样式区分
+            if(selectedPlant === 'peashooter'){
+                plant.style.background = '#2196f3';
+                plant.innerText = '豌豆';
+                // 豌豆射手攻击
+                setInterval(()=>shootPea(plant), 2000);
+            }else{
+                plant.style.background = '#ffeb3b';
+                plant.innerText = '向日葵';
+                // 向日葵产阳光
+                setInterval(()=>spawnSunFromFlower(plant), 5000);
+            }
+            grid.appendChild(plant);
+            selectedPlant = null;
+        }
+
+        // 向日葵产阳光
+        function spawnSunFromFlower(flower){
+            if(gameOver) return;
+            const sun = document.createElement('div');
+            sun.className = 'sun';
+            sun.innerText = '+25';
+            sun.style.left = flower.offsetLeft + 'px';
+            sun.style.top = flower.offsetTop - 30 + 'px';
+            document.getElementById('game-area').appendChild(sun);
+            sun.onclick = () => {
+                sunCount +=25;
+                updateStatus();
+                sun.remove();
+            }
+            setTimeout(()=>sun.remove(), 5000);
+        }
+
+        // 豌豆射手发射子弹
+        function shootPea(plant){
+            if(gameOver) return;
+            const pea = document.createElement('div');
+            pea.style.width = '10px';
+            pea.style.height = '10px';
+            pea.style.background = '#fff';
+            pea.style.borderRadius = '50%';
+            pea.style.position = 'absolute';
+            pea.style.left = plant.offsetLeft + 60 + 'px';
+            pea.style.top = plant.offsetTop + 30 + 'px';
+            document.getElementById('game-area').appendChild(pea);
+            
+            // 子弹移动
+            const movePea = setInterval(()=>{
+                pea.style.left = parseInt(pea.style.left) + 10 + 'px';
+                // 碰撞检测僵尸
+                document.querySelectorAll('.zombie').forEach(zombie=>{
+                    if( Math.abs(parseInt(pea.style.left) - parseInt(zombie.style.left)) < 30 &&
+                        Math.abs(parseInt(pea.style.top) - parseInt(zombie.style.top)) < 50 ){
+                        zombie.remove();
+                        pea.remove();
+                        clearInterval(movePea);
+                    }
+                });
+                if(parseInt(pea.style.left) > 800) clearInterval(movePea);
+            },30);
+        }
+
+        // 5. 僵尸系统
+        function spawnZombie(){
+            if(gameOver) return;
+            const zombie = document.createElement('div');
+            zombie.className = 'zombie';
+            zombie.style.background = '#8d6e63';
+            zombie.innerText = '僵尸';
+            // 随机行生成僵尸
+            const row = Math.floor(Math.random() * rows);
+            const rowTop = document.querySelectorAll('.row')[row].offsetTop;
+            zombie.style.left = '650px';
+            zombie.style.top = rowTop + 'px';
+            document.getElementById('game-area').appendChild(zombie);
+            
+            // 僵尸移动
+            const moveZombie = setInterval(()=>{
+                zombie.style.left = parseInt(zombie.style.left) - 2 + 'px';
+                // 失败判定：僵尸到达最左侧
+                if(parseInt(zombie.style.left) < 20){
+                    gameOver = true;
+                    updateStatus('游戏失败！僵尸突破防线！');
+                    clearInterval(moveZombie);
+                }
+            },50);
+        }
+        setInterval(spawnZombie, 5000);
+
+        // 更新游戏状态文字
+        function updateStatus(text=null){
+            const status = document.getElementById('game-status');
+            if(text) status.innerText = text;
+            else status.innerText = `阳光：${sunCount} | 游戏进行中`;
+        }
+
+        // 右侧代码编辑器重新运行功能
+        document.getElementById('run-btn').onclick = () => {
+            // 执行用户编辑的配置代码
+            try {
+                eval(document.getElementById('code-area').value);
+                alert('配置已生效！');
+            } catch (e) {
+                alert('代码错误：'+e);
+            }
+        }
+    </script>
+</body>
+</html>

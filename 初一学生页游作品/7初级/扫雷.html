@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>扫雷游戏教程 - 前端实践学习</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+
+    /* 布局：游戏区 + 代码区 */
+    .main-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ========== 左侧：游戏区域 ========== */
+    .game-panel {
+      flex: 1;
+      background: #f5f5f5;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-right: 3px solid #ddd;
+    }
+
+    .title {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .tips {
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* 游戏控制栏 */
+    .control {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    #resetBtn {
+      padding: 8px 16px;
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #resetBtn:hover {
+      background: #3367d6;
+    }
+
+    /* 扫雷棋盘样式 */
+    .mine-board {
+      display: grid;
+      gap: 2px;
+      background: #999;
+      padding: 2px;
+    }
+
+    /* 格子默认样式 */
+    .cell {
+      width: 28px;
+      height: 28px;
+      background: #bbb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* 点开后的格子 */
+    .cell.revealed {
+      background: #eee;
+    }
+
+    /* 地雷样式 */
+    .cell.mine {
+      background: #ff4444;
+      color: white;
+    }
+
+    /* 标记旗帜 */
+    .cell.flagged {
+      background: #ffeb3b;
+    }
+
+    /* ========== 右侧：代码编辑器区域 ========== */
+    .code-panel {
+      width: 580px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-header {
+      padding: 12px;
+      background: #252526;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    #codeArea {
+      flex: 1;
+      padding: 15px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      resize: none;
+      font-size: 14px;
+      line-height: 1.5;
+      font-family: "Consolas", monospace;
+    }
+
+    #runBtn {
+      padding: 12px;
+      background: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #runBtn:hover {
+      background: #005a9e;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="main-container">
+    <!-- 左侧：扫雷游戏 -->
+    <div class="game-panel">
+      <div class="title">🎮 经典扫雷游戏</div>
+      <div class="tips">
+        操作说明：<br>
+        1. 鼠标<strong>左键</strong>点开格子<br>
+        2. 鼠标<strong>右键</strong>标记/取消地雷<br>
+        3. 点开所有安全格子 = 胜利
+      </div>
+      <div class="control">
+        <button id="resetBtn">重新开始</button>
+      </div>
+      <div id="board" class="mine-board"></div>
+    </div>
+
+    <!-- 右侧：代码编辑器 -->
+    <div class="code-panel">
+      <div class="code-header">📝 可修改代码（修改后点击运行）</div>
+      <textarea id="codeArea" spellcheck="false"></textarea>
+      <button id="runBtn">▶️ 运行修改后的代码</button>
+    </div>
+  </div>
+
+  <script>
+    // ==============================
+    // 扫雷游戏核心代码（学生可编辑）
+    // ==============================
+    const board = document.getElementById('board');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    // 可修改参数（学生练习重点）
+    const ROWS = 8;     // 行数
+    const COLS = 8;     // 列数
+    const MINE_COUNT = 10; // 地雷数量
+    
+    let cells = [];
+    let gameOver = false;
+
+    // 初始化游戏
+    function initGame() {
+      gameOver = false;
+      board.innerHTML = '';
+      cells = [];
+      
+      // 设置棋盘网格
+      board.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+      board.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+      
+      // 创建格子
+      for(let r=0; r<ROWS; r++) {
+        cells[r] = [];
+        for(let c=0; c<COLS; c++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          
+          // 左键点开
+          cell.addEventListener('click', () => revealCell(r, c));
+          // 右键标记
+          cell.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            flagCell(r, c);
+          });
+          
+          board.appendChild(cell);
+          cells[r][c] = {
+            el: cell,
+            isMine: false,
+            isRevealed: false,
+            isFlagged: false,
+            count: 0
+          };
+        }
+      }
+      
+      // 随机放置地雷
+      placeMines();
+      // 计算周围地雷数
+      countMinesAround();
+    }
+
+    // 随机生成地雷
+    function placeMines() {
+      let minesPlaced = 0;
+      while(minesPlaced < MINE_COUNT) {
+        const r = Math.floor(Math.random() * ROWS);
+        const c = Math.floor(Math.random() * COLS);
+        if(!cells[r][c].isMine) {
+          cells[r][c].isMine = true;
+          minesPlaced++;
+        }
+      }
+    }
+
+    // 计算每个格子周围的地雷数量
+    function countMinesAround() {
+      const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+      for(let r=0; r<ROWS; r++) {
+        for(let c=0; c<COLS; c++) {
+          if(cells[r][c].isMine) continue;
+          let count = 0;
+          for(let [dr, dc] of dirs) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if(nr >=0 && nr < ROWS && nc >=0 && nc < COLS && cells[nr][nc].isMine) {
+              count++;
+            }
+          }
+          cells[r][c].count = count;
+        }
+      }
+    }
+
+    // 点开格子
+    function revealCell(r, c) {
+      const cell = cells[r][c];
+      if(gameOver || cell.isRevealed || cell.isFlagged) return;
+      
+      cell.isRevealed = true;
+      cell.el.classList.add('revealed');
+      
+      // 踩到地雷
+      if(cell.isMine) {
+        cell.el.textContent = '💣';
+        cell.el.classList.add('mine');
+        gameOver = true;
+        alert('游戏结束！你踩到地雷了');
+        showAllMines();
+        return;
+      }
+      
+      // 显示数字
+      if(cell.count > 0) {
+        cell.el.textContent = cell.count;
+      } else {
+        // 无数字，自动展开周围
+        const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        for(let [dr, dc] of dirs) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if(nr >=0 && nr < ROWS && nc >=0 && nc < COLS) {
+            revealCell(nr, nc);
+          }
+        }
+      }
+      
+      checkWin();
+    }
+
+    // 右键标记旗帜
+    function flagCell(r, c) {
+      const cell = cells[r][c];
+      if(gameOver || cell.isRevealed) return;
+      
+      cell.isFlagged = !cell.isFlagged;
+      cell.el.classList.toggle('flagged');
+      cell.el.textContent = cell.isFlagged ? '🚩' : '';
+    }
+
+    // 显示所有地雷
+    function showAllMines() {
+      for(let r=0; r<ROWS; r++) {
+        for(let c=0; c<COLS; c++) {
+          if(cells[r][c].isMine) {
+            cells[r][c].el.textContent = '💣';
+            cells[r][c].el.classList.add('mine');
+          }
+        }
+      }
+    }
+
+    // 判断胜利
+    function checkWin() {
+      let safeCells = ROWS * COLS - MINE_COUNT;
+      let revealed = 0;
+      
+      for(let r=0; r<ROWS; r++) {
+        for(let c=0; c<COLS; c++) {
+          if(cells[r][c].isRevealed && !cells[r][c].isMine) {
+            revealed++;
+          }
+        }
+      }
+      
+      if(revealed === safeCells) {
+        gameOver = true;
+        alert('恭喜你！扫雷成功！');
+      }
+    }
+
+    // 绑定重新开始按钮
+    resetBtn.addEventListener('click', initGame);
+
+    // 启动游戏
+    window.onload = initGame;
+  </script>
+
+  <script>
+    // ==============================
+    // 代码编辑器功能（固定无需修改）
+    // ==============================
+    const codeArea = document.getElementById('codeArea');
+    const runBtn = document.getElementById('runBtn');
+    const gameScript = document.querySelectorAll('script')[0].innerText;
+
+    // 加载游戏代码到编辑器
+    window.addEventListener('load', () => {
+      codeArea.value = gameScript;
+    });
+
+    // 运行学生修改后的代码
+    runBtn.addEventListener('click', () => {
+      try {
+        // 清空旧棋盘
+        document.getElementById('board').innerHTML = '';
+        // 执行新代码
+        eval(codeArea.value);
+        alert('✅ 代码运行成功！');
+      } catch (error) {
+        alert('❌ 代码出错：' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>

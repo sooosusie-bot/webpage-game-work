@@ -1,0 +1,514 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>经典华容道 | 10关挑战</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+
+        .game-container {
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .level-btn {
+            padding: 8px 12px;
+            margin: 0 3px 6px;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .level-btn.active {
+            background: #e74c3c;
+            font-weight: bold;
+        }
+        .level-btn:hover {
+            background: #2980b9;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #2ecc71;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .control-btn:hover {
+            background: #27ae60;
+        }
+
+        /* 华容道棋盘 */
+        .board {
+            width: 320px;
+            height: 400px;
+            margin: 20px auto;
+            background: #7f5539;
+            border: 8px solid #5a3921;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 4px;
+            position: relative;
+        }
+
+        /* 棋子样式 */
+        .piece {
+            position: absolute;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            cursor: grab;
+            user-select: none;
+            transition: left 0.2s, top 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .piece:active {
+            cursor: grabbing;
+        }
+
+        /* 棋子类型：曹操(2x2)、横将(1x2)、竖将(2x1)、小兵(1x1) */
+        .caocao { width: 152px; height: 152px; background: #e74c3c; color: white; font-size: 22px; }
+        .horizontal { width: 152px; height: 72px; background: #f39c12; }
+        .vertical { width: 72px; height: 152px; background: #3498db; color: white; }
+        .soldier { width: 72px; height: 72px; background: #ecf0f1; }
+
+        /* 出口标记 */
+        .exit {
+            position: absolute;
+            top: 304px;
+            left: 124px;
+            width: 72px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 5px;
+        }
+
+        /* 胜利弹窗 */
+        .win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .win-content {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .win-content h2 { color: #e74c3c; margin-bottom: 15px; }
+        .next-btn {
+            padding: 10px 25px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">经典华容道</h1>
+        <div class="info-bar">
+            <div>当前关卡：<span id="level">1</span></div>
+            <div>步数：<span id="steps">0</span></div>
+        </div>
+
+        <!-- 关卡选择 -->
+        <div id="level-select">
+            <button class="level-btn active" data-level="1">1</button>
+            <button class="level-btn" data-level="2">2</button>
+            <button class="level-btn" data-level="3">3</button>
+            <button class="level-btn" data-level="4">4</button>
+            <button class="level-btn" data-level="5">5</button>
+            <button class="level-btn" data-level="6">6</button>
+            <button class="level-btn" data-level="7">7</button>
+            <button class="level-btn" data-level="8">8</button>
+            <button class="level-btn" data-level="9">9</button>
+            <button class="level-btn" data-level="10">10</button>
+        </div>
+
+        <!-- 游戏控制 -->
+        <div>
+            <button class="control-btn" id="reset">重置关卡</button>
+            <button class="control-btn" id="save">继续游戏</button>
+        </div>
+
+        <!-- 游戏棋盘 -->
+        <div class="board" id="board">
+            <div class="exit"></div>
+        </div>
+    </div>
+
+    <!-- 胜利弹窗 -->
+    <div class="win-modal" id="winModal">
+        <div class="win-content">
+            <h2>?? 恭喜通关！</h2>
+            <p>当前关卡：<span id="winLevel">1</span></p>
+            <p>所用步数：<span id="winSteps">0</span></p>
+            <button class="next-btn" id="nextLevel">下一关</button>
+        </div>
+    </div>
+
+    <script>
+        // ===================== 游戏核心配置 =====================
+        const CELL_SIZE = 80; // 每个格子大小
+        const board = document.getElementById('board');
+        const levelText = document.getElementById('level');
+        const stepsText = document.getElementById('steps');
+        const winModal = document.getElementById('winModal');
+        let currentLevel = 1;
+        let steps = 0;
+        let pieces = []; // 棋子数组
+
+        // 10个关卡布局（逐关难度递增）
+        // 格式：{type: 类型(caocao/horizontal/vertical/soldier), x: 列, y: 行, name: 名称}
+        const LEVELS = [
+            [], // 占位 关卡从1开始
+            // 关卡1 入门
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:0, name:'关羽'},
+                {type: 'vertical', x:3, y:0, name:'张飞'},
+                {type: 'horizontal', x:1, y:3, name:'黄忠'},
+                {type: 'soldier', x:0, y:2, name:'兵'},
+                {type: 'soldier', x:3, y:2, name:'兵'},
+                {type: 'soldier', x:0, y:4, name:'兵'},
+                {type: 'soldier', x:2, y:4, name:'兵'},
+            ],
+            // 关卡2 简单
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:0, name:'赵云'},
+                {type: 'vertical', x:3, y:0, name:'马超'},
+                {type: 'horizontal', x:0, y:2, name:'刘备'},
+                {type: 'horizontal', x:1, y:4, name:'魏延'},
+                {type: 'soldier', x:0, y:4, name:'兵'},
+                {type: 'soldier', x:2, y:2, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ],
+            // 关卡3 初级
+            [
+                {type: 'caocao', x:1, y:0, name:'曹操'},
+                {type: 'vertical', x:0, y:1, name:'关羽'},
+                {type: 'vertical', x:3, y:1, name:'张飞'},
+                {type: 'horizontal', x:0, y:3, name:'黄忠'},
+                {type: 'horizontal', x:1, y:4, name:'赵云'},
+                {type: 'soldier', x:0, y:0, name:'兵'},
+                {type: 'soldier', x:2, y:2, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ],
+            // 关卡4 进阶
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:0, name:'马超'},
+                {type: 'vertical', x:2, y:0, name:'黄忠'},
+                {type: 'horizontal', x:0, y:2, name:'关羽'},
+                {type: 'horizontal', x:2, y:3, name:'张飞'},
+                {type: 'soldier', x:0, y:4, name:'兵'},
+                {type: 'soldier', x:1, y:3, name:'兵'},
+                {type: 'soldier', x:3, y:1, name:'兵'},
+            ],
+            // 关卡5 困难
+            [
+                {type: 'caocao', x:1, y:0, name:'曹操'},
+                {type: 'vertical', x:0, y:2, name:'赵云'},
+                {type: 'vertical', x:3, y:2, name:'马超'},
+                {type: 'horizontal', x:0, y:1, name:'刘备'},
+                {type: 'horizontal', x:1, y:3, name:'关羽'},
+                {type: 'soldier', x:0, y:0, name:'兵'},
+                {type: 'soldier', x:2, y:1, name:'兵'},
+                {type: 'soldier', x:3, y:0, name:'兵'},
+            ],
+            // 关卡6 大师
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:0, name:'张飞'},
+                {type: 'vertical', x:3, y:1, name:'赵云'},
+                {type: 'horizontal', x:1, y:0, name:'关羽'},
+                {type: 'horizontal', x:0, y:3, name:'黄忠'},
+                {type: 'soldier', x:2, y:2, name:'兵'},
+                {type: 'soldier', x:1, y:4, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ],
+            // 关卡7 宗师
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:1, name:'马超'},
+                {type: 'vertical', x:2, y:2, name:'赵云'},
+                {type: 'horizontal', x:0, y:0, name:'关羽'},
+                {type: 'horizontal', x:2, y:0, name:'张飞'},
+                {type: 'soldier', x:0, y:3, name:'兵'},
+                {type: 'soldier', x:3, y:2, name:'兵'},
+                {type: 'soldier', x:1, y:4, name:'兵'},
+            ],
+            // 关卡8 王者
+            [
+                {type: 'caocao', x:1, y:0, name:'曹操'},
+                {type: 'vertical', x:0, y:1, name:'黄忠'},
+                {type: 'vertical', x:3, y:1, name:'马超'},
+                {type: 'horizontal', x:1, y:2, name:'关羽'},
+                {type: 'horizontal', x:0, y:4, name:'赵云'},
+                {type: 'soldier', x:2, y:0, name:'兵'},
+                {type: 'soldier', x:2, y:3, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ],
+            // 关卡9 炼狱
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:0, name:'关羽'},
+                {type: 'vertical', x:3, y:0, name:'张飞'},
+                {type: 'horizontal', x:0, y:2, name:'赵云'},
+                {type: 'horizontal', x:2, y:2, name:'马超'},
+                {type: 'soldier', x:1, y:3, name:'兵'},
+                {type: 'soldier', x:0, y:4, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ],
+            // 关卡10 终极挑战
+            [
+                {type: 'caocao', x:1, y:1, name:'曹操'},
+                {type: 'vertical', x:0, y:2, name:'关羽'},
+                {type: 'vertical', x:3, y:0, name:'赵云'},
+                {type: 'horizontal', x:0, y:0, name:'张飞'},
+                {type: 'horizontal', x:1, y:3, name:'马超'},
+                {type: 'soldier', x:0, y:1, name:'兵'},
+                {type: 'soldier', x:2, y:0, name:'兵'},
+                {type: 'soldier', x:3, y:3, name:'兵'},
+            ]
+        ];
+
+        // ===================== 游戏核心函数 =====================
+        // 初始化关卡
+        function initLevel(level) {
+            // 清空棋盘
+            board.innerHTML = '<div class="exit"></div>';
+            pieces = [];
+            steps = 0;
+            stepsText.textContent = steps;
+            currentLevel = level;
+            levelText.textContent = level;
+
+            // 更新按钮状态
+            document.querySelectorAll('.level-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.level) === level);
+            });
+
+            // 渲染棋子
+            LEVELS[level].forEach((data, index) => {
+                createPiece(data, index);
+            });
+
+            // 保存进度
+            localStorage.setItem('lastLevel', level);
+        }
+
+        // 创建棋子
+        function createPiece(data, index) {
+            const piece = document.createElement('div');
+            piece.className = `piece ${data.type}`;
+            piece.textContent = data.name;
+            piece.dataset.index = index;
+            piece.dataset.x = data.x;
+            piece.dataset.y = data.y;
+            piece.dataset.type = data.type;
+
+            // 设置位置
+            updatePiecePosition(piece, data.x, data.y);
+
+            // 绑定事件
+            piece.addEventListener('mousedown', startDrag);
+            piece.addEventListener('touchstart', startDrag, {passive: true});
+
+            board.appendChild(piece);
+            pieces.push(piece);
+        }
+
+        // 更新棋子坐标
+        function updatePiecePosition(piece, x, y) {
+            piece.style.left = `${x * CELL_SIZE}px`;
+            piece.style.top = `${y * CELL_SIZE}px`;
+            piece.dataset.x = x;
+            piece.dataset.y = y;
+        }
+
+        // 拖拽逻辑
+        let startX, startY, currentPiece;
+        function startDrag(e) {
+            currentPiece = e.target.closest('.piece');
+            if (!currentPiece) return;
+
+            // 记录起点
+            const touch = e.touches ? e.touches[0] : e;
+            startX = touch.clientX - currentPiece.getBoundingClientRect().left;
+            startY = touch.clientY - currentPiece.getBoundingClientRect().top;
+
+            // 绑定移动/结束事件
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchmove', dragMove, {passive: false});
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function dragMove(e) {
+            if (!currentPiece) return;
+            e.preventDefault();
+
+            const touch = e.touches ? e.touches[0] : e;
+            const x = touch.clientX - startX - board.getBoundingClientRect().left;
+            const y = touch.clientY - startY - board.getBoundingClientRect().top;
+
+            // 吸附格子移动
+            const gridX = Math.round(x / CELL_SIZE);
+            const gridY = Math.round(y / CELL_SIZE);
+            movePiece(currentPiece, gridX, gridY);
+        }
+
+        function endDrag() {
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchmove', dragMove);
+            document.removeEventListener('touchend', endDrag);
+            currentPiece = null;
+        }
+
+        // 移动棋子（碰撞检测）
+        function movePiece(piece, targetX, targetY) {
+            const type = piece.dataset.type;
+            const currX = parseInt(piece.dataset.x);
+            const currY = parseInt(piece.dataset.y);
+
+            // 计算棋子占用格子
+            let occupied = [];
+            if (type === 'caocao') occupied = [[0,0],[1,0],[0,1],[1,1]];
+            else if (type === 'horizontal') occupied = [[0,0],[1,0]];
+            else if (type === 'vertical') occupied = [[0,0],[0,1]];
+            else occupied = [[0,0]];
+
+            // 检测边界+碰撞
+            for (let [dx, dy] of occupied) {
+                const x = targetX + dx;
+                const y = targetY + dy;
+                if (x < 0 || x > 3 || y < 0 || y > 4) return; // 越界
+
+                // 碰撞其他棋子
+                for (let p of pieces) {
+                    if (p === piece) continue;
+                    const px = parseInt(p.dataset.x);
+                    const py = parseInt(p.dataset.y);
+                    let pOcc = [];
+                    if (p.dataset.type === 'caocao') pOcc = [[0,0],[1,0],[0,1],[1,1]];
+                    else if (p.dataset.type === 'horizontal') pOcc = [[0,0],[1,0]];
+                    else if (p.dataset.type === 'vertical') pOcc = [[0,0],[0,1]];
+                    else pOcc = [[0,0]];
+
+                    for (let [pdx, pdy] of pOcc) {
+                        if (x === px + pdx && y === py + pdy) return;
+                    }
+                }
+            }
+
+            // 合法移动
+            if (currX !== targetX || currY !== targetY) {
+                steps++;
+                stepsText.textContent = steps;
+                updatePiecePosition(piece, targetX, targetY);
+                checkWin();
+            }
+        }
+
+        // 胜利判定（曹操到达出口）
+        function checkWin() {
+            const caocao = pieces.find(p => p.dataset.type === 'caocao');
+            const x = parseInt(caocao.dataset.x);
+            const y = parseInt(caocao.dataset.y);
+
+            // 出口位置：x=1 y=3
+            if (x === 1 && y === 3) {
+                document.getElementById('winLevel').textContent = currentLevel;
+                document.getElementById('winSteps').textContent = steps;
+                winModal.style.display = 'flex';
+            }
+        }
+
+        // ===================== 页面事件绑定 =====================
+        // 关卡选择
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            btn.addEventListener('click', () => initLevel(parseInt(btn.dataset.level)));
+        });
+
+        // 重置关卡
+        document.getElementById('reset').addEventListener('click', () => initLevel(currentLevel));
+
+        // 继续游戏
+        document.getElementById('save').addEventListener('click', () => {
+            const last = localStorage.getItem('lastLevel') || 1;
+            initLevel(parseInt(last));
+        });
+
+        // 下一关
+        document.getElementById('nextLevel').addEventListener('click', () => {
+            winModal.style.display = 'none';
+            if (currentLevel < 10) initLevel(currentLevel + 1);
+            else alert('?? 恭喜你通关全部10个终极关卡！');
+        });
+
+        // 启动游戏
+        window.addEventListener('load', () => {
+            const last = localStorage.getItem('lastLevel') || 1;
+            initLevel(parseInt(last));
+        });
+    </script>
+</body>
+</html>

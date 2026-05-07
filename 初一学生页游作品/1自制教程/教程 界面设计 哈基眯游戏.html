@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈基米小游戏世界</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+
+        /* 页面背景 - 渐变酷炫配色 */
+        body {
+            background: linear-gradient(135deg, #ff96c5, #9eb8ff, #c09cff);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 标题样式 */
+        .title {
+            text-align: center;
+            color: white;
+            font-size: 42px;
+            margin: 30px 0;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            animation: bounce 2s infinite;
+        }
+
+        /* 标题弹跳动画 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 卡片容器 - 自动排版 */
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 游戏卡片样式 */
+        .game-card {
+            width: 280px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            /* 边框渐变特效 */
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        /* 卡片悬浮动画 - 核心酷炫效果 */
+        .game-card:hover {
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(255, 150, 197, 0.4);
+            border-color: #ff7bc7;
+        }
+
+        /* 哈基米图标样式 */
+        .cat-icon {
+            font-size: 70px;
+            margin: 15px 0;
+            animation: rotate 3s linear infinite;
+        }
+
+        /* 图标旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 卡片标题 */
+        .card-title {
+            font-size: 22px;
+            color: #ff5ca8;
+            margin: 10px 0;
+        }
+
+        /* 卡片描述 */
+        .card-desc {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        /* 按钮样式 */
+        .play-btn {
+            display: inline-block;
+            padding: 10px 25px;
+            background: linear-gradient(90deg, #ff87d7, #9c9eff);
+            color: white;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #ff87d7;
+        }
+
+        /* 底部版权 */
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            font-size: 16px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面主标题 -->
+    <h1 class="title">🐾 哈基米小游戏世界 🐾</h1>
+
+    <!-- 卡片容器 -->
+    <div class="card-container">
+        <!-- 卡片1 -->
+        <div class="game-card">
+            <div class="cat-icon">🐱</div>
+            <h3 class="card-title">哈基米跑酷</h3>
+            <p class="card-desc">控制可爱哈基米躲避障碍，向前奔跑，超解压！</p>
+            <a href="#" class="play-btn">开始游戏</a>
+        </div>
+
+        <!-- 卡片2 -->
+        <div class="game-card">
+            <div class="cat-icon">🐹</div>
+            <h3 class="card-title">猫咪消消乐</h3>
+            <p class="card-desc">匹配相同的哈基米图案，消除得分，轻松好玩！</p>
+            <a href="#" class="play-btn">开始游戏</a>
+        </div>
+
+        <!-- 卡片3 -->
+        <div class="game-card">
+            <div class="cat-icon">🎮</div>
+            <h3 class="card-title">猫咪大冒险</h3>
+            <p class="card-desc">帮助哈基米探索世界，收集小鱼干，闯关升级！</p>
+            <a href="#" class="play-btn">开始游戏</a>
+        </div>
+
+        <!-- 卡片4 -->
+        <div class="game-card">
+            <div class="cat-icon">🎨</div>
+            <h3 class="card-title">涂鸦哈基米</h3>
+            <p class="card-desc">给可爱的哈基米涂上颜色，创作专属猫咪！</p>
+            <a href="#" class="play-btn">开始游戏</a>
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        🐾 哈基米主题游戏网页 · 初中生专属 🐾
+    </div>
+</body>
+</html>

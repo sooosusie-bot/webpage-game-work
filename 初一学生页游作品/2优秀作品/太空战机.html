@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>太空战机 - 终极射击游戏</title>
+  <!-- 外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- Tailwind 自定义配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            space: {
+              dark: '#0a0e27',
+              blue: '#1e2956',
+              neon: '#00f0ff',
+              purple: '#9d00ff',
+              red: '#ff2d55'
+            }
+          },
+          fontFamily: {
+            gaming: ['Orbitron', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow-neon {
+        text-shadow: 0 0 5px #00f0ff, 0 0 10px #00f0ff;
+      }
+      .text-shadow-purple {
+        text-shadow: 0 0 5px #9d00ff, 0 0 10px #9d00ff;
+      }
+      .glow-border {
+        box-shadow: 0 0 8px #00f0ff, 0 0 16px #00f0ff;
+      }
+      .animate-pulse-slow {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      overflow: hidden;
+      background: #0a0e27;
+      cursor: none;
+    }
+    #gameCanvas {
+      display: block;
+      background: radial-gradient(circle at center, #1e2956 0%, #0a0e27 100%);
+    }
+    .custom-cursor {
+      pointer-events: none;
+    }
+  </style>
+  <!-- 字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-space-dark font-gaming text-white">
+
+<!-- 游戏主容器 -->
+<div class="relative w-full h-screen flex flex-col items-center justify-center">
+  <!-- 画布 -->
+  <canvas id="gameCanvas" class="rounded-lg glow-border"></canvas>
+
+  <!-- 游戏UI 悬浮层 -->
+  <div class="absolute top-4 left-4 right-4 flex justify-between items-center px-4 py-2 bg-space-blue/60 rounded-lg backdrop-blur-sm">
+    <div class="flex gap-6">
+      <div class="flex items-center gap-2">
+        <i class="fa fa-star text-yellow-400"></i>
+        <span id="score" class="text-xl font-bold text-white">0</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i class="fa fa-heart text-space-red"></i>
+        <span id="lives" class="text-xl font-bold text-white">5</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i class="fa fa-level-up text-space-neon"></i>
+        <span id="level" class="text-xl font-bold text-white">1</span>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <button id="pauseBtn" class="p-2 bg-space-purple/70 rounded hover:bg-space-purple transition-all">
+        <i class="fa fa-pause"></i>
+      </button>
+      <button id="muteBtn" class="p-2 bg-space-neon/70 rounded hover:bg-space-neon transition-all">
+        <i class="fa fa-volume-up"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- 技能栏 -->
+  <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 px-4 py-2 bg-space-blue/60 rounded-lg backdrop-blur-sm">
+    <div class="relative skill-btn" data-skill="shield">
+      <div class="w-12 h-12 bg-cyan-500/50 rounded-lg flex items-center justify-center cursor-pointer hover:bg-cyan-500/80 transition-all">
+        <i class="fa fa-shield text-xl"></i>
+      </div>
+      <div id="shieldCooldown" class="absolute -bottom-6 left-0 right-0 text-xs text-center">就绪</div>
+    </div>
+    <div class="relative skill-btn" data-skill="double">
+      <div class="w-12 h-12 bg-yellow-500/50 rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-500/80 transition-all">
+        <i class="fa fa-bolt text-xl"></i>
+      </div>
+      <div id="doubleCooldown" class="absolute -bottom-6 left-0 right-0 text-xs text-center">就绪</div>
+    </div>
+    <div class="relative skill-btn" data-skill="nuke">
+      <div class="w-12 h-12 bg-space-red/50 rounded-lg flex items-center justify-center cursor-pointer hover:bg-space-red/80 transition-all">
+        <i class="fa fa-bomb text-xl"></i>
+      </div>
+      <div id="nukeCooldown" class="absolute -bottom-6 left-0 right-0 text-xs text-center">就绪</div>
+    </div>
+  </div>
+
+  <!-- 开始界面 -->
+  <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-space-dark/90 z-50">
+    <h1 class="text-[clamp(2rem,5vw,4rem)] font-bold text-space-neon text-shadow-neon mb-6 animate-pulse-slow">太空战机</h1>
+    <p class="text-lg text-gray-300 mb-8 text-center px-4">操控飞船击败敌人，挑战最高分！</p>
+    <div class="flex flex-col gap-4 mb-8">
+      <p class="text-gray-400 text-sm"><i class="fa fa-keyboard-o mr-2"></i>WASD/方向键：移动飞船</p>
+      <p class="text-gray-400 text-sm"><i class="fa fa-mouse-pointer mr-2"></i>鼠标/空格：自动射击</p>
+    </div>
+    <button id="startBtn" class="px-8 py-3 bg-space-neon text-space-dark font-bold rounded-lg hover:bg-white transition-all text-xl shadow-lg shadow-space-neon/50">
+      开始游戏
+    </button>
+    <p class="mt-8 text-gray-500 text-xs">最高分: <span id="highScore">0</span></p>
+  </div>
+
+  <!-- 游戏结束界面 -->
+  <div id="gameOverScreen" class="absolute inset-0 hidden flex-col items-center justify-center bg-space-dark/90 z-50">
+    <h2 class="text-4xl font-bold text-space-red mb-4">游戏结束</h2>
+    <p class="text-xl mb-2">最终得分: <span id="finalScore" class="text-space-neon">0</span></p>
+    <p class="text-lg mb-8">最高记录: <span id="finalHighScore" class="text-space-purple">0</span></p>
+    <button id="restartBtn" class="px-8 py-3 bg-space-purple text-white font-bold rounded-lg hover:bg-space-neon hover:text-space-dark transition-all">
+      重新开始
+    </button>
+  </div>
+
+  <!-- 暂停界面 -->
+  <div id="pauseScreen" class="absolute inset-0 hidden flex-col items-center justify-center bg-space-dark/80 z-50">
+    <h2 class="text-4xl font-bold text-space-neon mb-8">游戏暂停</h2>
+    <button id="resumeBtn" class="px-8 py-3 bg-space-neon text-space-dark font-bold rounded-lg hover:bg-white transition-all">
+      继续游戏
+    </button>
+  </div>
+
+  <!-- 自定义光标 -->
+  <div class="custom-cursor fixed w-6 h-6 border-2 border-space-neon rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none z-999"></div>
+</div>
+
+<script>
+// ==================== 游戏核心配置 ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// 画布尺寸
+function resizeCanvas() {
+  const maxWidth = Math.min(window.innerWidth - 40, 1200);
+  const maxHeight = Math.min(window.innerHeight - 120, 800);
+  canvas.width = maxWidth;
+  canvas.height = maxHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// 游戏状态
+const game = {
+  width: canvas.width,
+  height: canvas.height,
+  score: 0,
+  highScore: localStorage.getItem('spaceShooterHighScore') || 0,
+  lives: 5,
+  level: 1,
+  isPlaying: false,
+  isPaused: false,
+  isMuted: false,
+  enemySpawnRate: 1500,
+  enemySpeed: 2,
+  particleCount: 0,
+  maxParticles: 100
+};
+
+// 更新UI
+function updateUI() {
+  document.getElementById('score').textContent = game.score;
+  document.getElementById('lives').textContent = game.lives;
+  document.getElementById('level').textContent = game.level;
+  document.getElementById('highScore').textContent = game.highScore;
+  document.getElementById('finalScore').textContent = game.score;
+  document.getElementById('finalHighScore').textContent = game.highScore;
+}
+updateUI();
+
+// ==================== 音频系统 ====================
+const sounds = {
+  shoot: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'),
+  explosion: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3'),
+  powerUp: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-ethereal-fairy-win-sound-2019.mp3'),
+  nuke: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3')
+};
+// 音频预加载+音量调整
+Object.values(sounds).forEach(sound => {
+  sound.volume = 0.3;
+  sound.preload = 'auto';
+});
+function playSound(soundName) {
+  if (!game.isMuted && sounds[soundName]) {
+    sounds[soundName].currentTime = 0;
+    sounds[soundName].play().catch(() => {});
+  }
+}
+
+// ==================== 游戏实体类 ====================
+// 玩家飞船
+class Player {
+  constructor() {
+    this.width = 40;
+    this.height = 60;
+    this.x = game.width / 2 - this.width / 2;
+    this.y = game.height - this.height - 20;
+    this.speed = 8;
+    this.color = '#00f0ff';
+    this.shield = false;
+    this.shieldTimer = 0;
+    this.doubleFire = false;
+    this.doubleTimer = 0;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+    
+    // 飞船主体
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -this.height/2);
+    ctx.lineTo(-this.width/2, this.height/2);
+    ctx.lineTo(0, this.height/3);
+    ctx.lineTo(this.width/2, this.height/2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 尾焰动画
+    if(game.isPlaying && !game.isPaused) {
+      const flameLength = Math.random() * 15 + 10;
+      ctx.fillStyle = '#ff9500';
+      ctx.beginPath();
+      ctx.moveTo(-5, this.height/3);
+      ctx.lineTo(0, this.height/3 + flameLength);
+      ctx.lineTo(5, this.height/3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 护盾特效
+    if(this.shield) {
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.width/2 + 10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    
+    ctx.restore();
+  }
+
+  update(keys) {
+    // 移动控制
+    if((keys['w'] || keys['ArrowUp']) && this.y > 0) this.y -= this.speed;
+    if((keys['s'] || keys['ArrowDown']) && this.y < game.height - this.height) this.y += this.speed;
+    if((keys['a'] || keys['ArrowLeft']) && this.x > 0) this.x -= this.speed;
+    if((keys['d'] || keys['ArrowRight']) && this.x < game.width - this.width) this.x += this.speed;
+
+    // 技能计时
+    if(this.shield) {
+      this.shieldTimer--;
+      if(this.shieldTimer <= 0) this.shield = false;
+    }
+    if(this.doubleFire) {
+      this.doubleTimer--;
+      if(this.doubleTimer <= 0) this.doubleFire = false;
+    }
+  }
+}
+
+// 子弹
+class Bullet {
+  constructor(x, y, isDouble = false) {
+    this.x = x;
+    this.y = y;
+    this.width = 3;
+    this.height = 15;
+    this.speed = 10;
+    this.color = isDouble ? '#ffeb3b' : '#00f0ff';
+    this.damage = isDouble ? 2 : 1;
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    // 发光特效
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 10;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.shadowBlur = 0;
+  }
+
+  update() {
+    this.y -= this.speed;
+  }
+}
+
+// 敌人
+class Enemy {
+  constructor(type = 'normal') {
+    this.type = type;
+    const types = {
+      normal: {width: 30, height: 30, speed: game.enemySpeed, health: 1, color: '#ff2d55', score: 10},
+      fast: {width: 25, height: 25, speed: game.enemySpeed * 1.8, health: 1, color: '#ff9500', score: 15},
+      elite: {width: 45, height: 45, speed: game.enemySpeed * 0.8, health: 3, color: '#9d00ff', score: 30},
+      boss: {width: 80, height: 80, speed: game.enemySpeed * 0.5, health: 15, color: '#ff0040', score: 100}
+    };
+    Object.assign(this, types[type]);
+    this.x = Math.random() * (game.width - this.width);
+    this.y = -this.height;
+    this.maxHealth = this.health;
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    
+    // 血条
+    if(this.type !== 'normal' && this.type !== 'fast') {
+      const barWidth = this.width;
+      const barHeight = 4;
+      const healthPercent = this.health / this.maxHealth;
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(this.x, this.y - 8, barWidth, barHeight);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(this.x, this.y - 8, barWidth * healthPercent, barHeight);
+    }
+  }
+
+  update() {
+    this.y += this.speed;
+    // 左右摇摆
+    if(this.type === 'elite' || this.type === 'boss') {
+      this.x += Math.sin(this.y * 0.02) * 2;
+    }
+  }
+}
+
+// 粒子特效
+class Particle {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.vx = (Math.random() - 0.5) * 8;
+    this.vy = (Math.random() - 0.5) * 8;
+    this.alpha = 1;
+    this.decay = 0.02;
+    this.color = color;
+    this.size = Math.random() * 4 + 2;
+  }
+
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.alpha -= this.decay;
+  }
+}
+
+// 星空背景
+class Star {
+  constructor() {
+    this.x = Math.random() * game.width;
+    this.y = Math.random() * game.height;
+    this.size = Math.random() * 2 + 0.5;
+    this.speed = Math.random() * 2 + 1;
+    this.alpha = Math.random();
+  }
+
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  update() {
+    this.y += this.speed;
+    if(this.y > game.height) {
+      this.y = 0;
+      this.x = Math.random() * game.width;
+    }
+  }
+}
+
+// ==================== 游戏管理器 ====================
+const player = new Player();
+const keys = {};
+const bullets = [];
+const enemies = [];
+const particles = [];
+const stars = Array(100).fill().map(() => new Star());
+let shootTimer = 0;
+const shootCooldown = 200;
+
+// 技能冷却
+const skills = {
+  shield: {cooldown: 8000, lastUse: 0},
+  double: {cooldown: 10000, lastUse: 0},
+  nuke: {cooldown: 15000, lastUse: 0}
+};
+
+// 键盘控制
+document.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+  if(e.key === ' ' && game.isPlaying && !game.isPaused) shoot();
+});
+document.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// 射击函数
+function shoot() {
+  const now = Date.now();
+  if(now - shootTimer > shootCooldown) {
+    playSound('shoot');
+    if(player.doubleFire) {
+      bullets.push(new Bullet(player.x + 10, player.y, true));
+      bullets.push(new Bullet(player.x + player.width - 13, player.y, true));
+    } else {
+      bullets.push(new Bullet(player.x + player.width/2 - 1.5, player.y));
+    }
+    shootTimer = now;
+  }
+}
+
+// 生成敌人
+function spawnEnemy() {
+  if(!game.isPlaying || game.isPaused) return;
+  const rand = Math.random();
+  let type = 'normal';
+  if(rand > 0.9) type = 'boss';
+  else if(rand > 0.75) type = 'elite';
+  else if(rand > 0.5) type = 'fast';
+  enemies.push(new Enemy(type));
+}
+let enemySpawner = setInterval(spawnEnemy, game.enemySpawnRate);
+
+// 技能释放
+function useSkill(skill) {
+  const now = Date.now();
+  if(now - skills[skill].lastUse > skills[skill].cooldown) {
+    skills[skill].lastUse = now;
+    switch(skill) {
+      case 'shield':
+        player.shield = true;
+        player.shieldTimer = 300;
+        playSound('powerUp');
+        break;
+      case 'double':
+        player.doubleFire = true;
+        player.doubleTimer = 500;
+        playSound('powerUp');
+        break;
+      case 'nuke':
+        playSound('nuke');
+        // 全屏清屏
+        enemies.forEach(enemy => {
+          createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+          game.score += enemy.score;
+        });
+        enemies.length = 0;
+        break;
+    }
+  }
+}
+
+// 爆炸特效
+function createExplosion(x, y, color) {
+  for(let i = 0; i < 15; i++) {
+    if(particles.length < game.maxParticles) {
+      particles.push(new Particle(x, y, color));
+    }
+  }
+}
+
+// 碰撞检测
+function checkCollision(a, b) {
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
+}
+
+// 关卡升级
+function levelUp() {
+  if(game.score > game.level * 100) {
+    game.level++;
+    game.enemySpawnRate = Math.max(500, game.enemySpawnRate - 100);
+    game.enemySpeed += 0.2;
+    clearInterval(enemySpawner);
+    enemySpawner = setInterval(spawnEnemy, game.enemySpawnRate);
+  }
+}
+
+// ==================== 游戏主循环 ====================
+function gameLoop() {
+  // 清空画布
+  ctx.clearRect(0, 0, game.width, game.height);
+  
+  // 渲染星空
+  stars.forEach(star => {
+    star.update();
+    star.draw();
+  });
+
+  if(game.isPlaying && !game.isPaused) {
+    // 更新玩家
+    player.update(keys);
+    player.draw();
+
+    // 更新子弹
+    bullets.forEach((bullet, index) => {
+      bullet.update();
+      bullet.draw();
+      // 移除出屏子弹
+      if(bullet.y < 0) bullets.splice(index, 1);
+    });
+
+    // 更新敌人
+    enemies.forEach((enemy, index) => {
+      enemy.update();
+      enemy.draw();
+
+      // 敌人出屏
+      if(enemy.y > game.height) {
+        enemies.splice(index, 1);
+        if(!player.shield) game.lives--;
+        checkGameOver();
+      }
+
+      // 子弹碰撞敌人
+      bullets.forEach((bullet, bIndex) => {
+        if(checkCollision(bullet, enemy)) {
+          enemy.health -= bullet.damage;
+          bullets.splice(bIndex, 1);
+          if(enemy.health <= 0) {
+            createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+            playSound('explosion');
+            game.score += enemy.score;
+            enemies.splice(index, 1);
+            levelUp();
+            updateUI();
+          }
+        }
+      });
+
+      // 玩家碰撞敌人
+      if(checkCollision(player, enemy) && !player.shield) {
+        createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+        playSound('explosion');
+        enemies.splice(index, 1);
+        game.lives--;
+        checkGameOver();
+        updateUI();
+      }
+    });
+
+    // 更新粒子
+    particles.forEach((particle, index) => {
+      particle.update();
+      particle.draw();
+      if(particle.alpha <= 0) particles.splice(index, 1);
+    });
+
+    // 自动射击
+    shoot();
+  } else {
+    player.draw();
+  }
+
+  // 技能冷却UI
+  Object.keys(skills).forEach(skill => {
+    const cd = document.getElementById(`${skill}Cooldown`);
+    const remaining = Math.ceil((skills[skill].cooldown - (Date.now() - skills[skill].lastUse)) / 1000);
+    cd.textContent = remaining > 0 ? `${remaining}s` : '就绪';
+    cd.style.color = remaining > 0 ? '#ff0000' : '#00ff00';
+  });
+
+  requestAnimationFrame(gameLoop);
+}
+
+// 游戏结束检测
+function checkGameOver() {
+  if(game.lives <= 0) {
+    game.isPlaying = false;
+    if(game.score > game.highScore) {
+      game.highScore = game.score;
+      localStorage.setItem('spaceShooterHighScore', game.highScore);
+    }
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+    document.getElementById('gameOverScreen').style.display = 'flex';
+    updateUI();
+  }
+}
+
+// ==================== 按钮事件 ====================
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startScreen').style.display = 'none';
+  resetGame();
+  game.isPlaying = true;
+  gameLoop();
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  document.getElementById('gameOverScreen').style.display = 'none';
+  resetGame();
+  game.isPlaying = true;
+});
+
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  if(!game.isPlaying) return;
+  game.isPaused = true;
+  document.getElementById('pauseScreen').style.display = 'flex';
+});
+
+document.getElementById('resumeBtn').addEventListener('click', () => {
+  game.isPaused = false;
+  document.getElementById('pauseScreen').style.display = 'none';
+});
+
+document.getElementById('muteBtn').addEventListener('click', (e) => {
+  game.isMuted = !game.isMuted;
+  const icon = e.target.tagName === 'I' ? e.target : e.target.querySelector('i');
+  icon.classList.toggle('fa-volume-up');
+  icon.classList.toggle('fa-volume-off');
+});
+
+// 技能按钮
+document.querySelectorAll('.skill-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(game.isPlaying && !game.isPaused) {
+      useSkill(btn.dataset.skill);
+    }
+  });
+});
+
+// 重置游戏
+function resetGame() {
+  game.score = 0;
+  game.lives = 5;
+  game.level = 1;
+  game.enemySpawnRate = 1500;
+  game.enemySpeed = 2;
+  bullets.length = 0;
+  enemies.length = 0;
+  particles.length = 0;
+  player.x = game.width / 2 - player.width / 2;
+  player.y = game.height - player.height - 20;
+  player.shield = false;
+  player.doubleFire = false;
+  clearInterval(enemySpawner);
+  enemySpawner = setInterval(spawnEnemy, game.enemySpawnRate);
+  updateUI();
+}
+
+// 自定义光标
+document.addEventListener('mousemove', (e) => {
+  const cursor = document.querySelector('.custom-cursor');
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+});
+
+// 启动
+gameLoop();
+</script>
+</body>
+</html>

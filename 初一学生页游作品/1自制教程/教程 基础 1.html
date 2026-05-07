@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML+CSS 编程小游戏 - 学习平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        /* 页面标题 */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        /* 主容器：左右分栏 */
+        .container {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 150px);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 左侧：游戏运行区域 */
+        .preview {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-title {
+            font-size: 18px;
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #game-view {
+            flex: 1;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            overflow: auto;
+            background: #fafbfc;
+        }
+
+        /* 右侧：代码编辑区域 */
+        .code-editor {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-title {
+            font-size: 18px;
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            resize: none;
+            font-family: "Consolas", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f7fafc;
+            margin-bottom: 15px;
+        }
+
+        /* 按钮样式 */
+        .btn-run {
+            padding: 12px;
+            background: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-run:hover {
+            background: #2c5282;
+        }
+
+        /* 新手任务引导 */
+        .task-guide {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: #e6fffa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #38b2ac;
+        }
+
+        .task-guide h3 {
+            color: #234e52;
+            margin-bottom: 10px;
+        }
+
+        .task-guide ul {
+            padding-left: 20px;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎮 HTML + CSS 基础编程小游戏</h1>
+        <p>修改右侧代码 → 点击运行 → 实时查看效果，在实践中学习前端知识</p>
+    </div>
+
+    <!-- 学习任务引导 -->
+    <div class="task-guide">
+        <h3>📚 新手学习任务（学生练习）</h3>
+        <ul>
+            <li>尝试修改颜色：把 red 改成 blue / green / yellow</li>
+            <li>调整大小：把 50px 改成 100px / 80px</li>
+            <li>改变形状：添加 border-radius: 50% 变成圆形</li>
+            <li>添加文字：在 div 中间输入你的名字</li>
+            <li>修改位置：添加 margin: 50px 让方块移动</li>
+        </ul>
+    </div>
+
+    <!-- 主界面：运行区 + 代码区 -->
+    <div class="container">
+        <!-- 左侧：游戏运行界面 -->
+        <div class="preview">
+            <div class="preview-title">✅ 游戏运行区</div>
+            <div id="game-view"></div>
+        </div>
+
+        <!-- 右侧：代码编辑后台 -->
+        <div class="code-editor">
+            <div class="editor-title">✍️ 代码编辑区</div>
+            <textarea id="code-input" placeholder="在这里编写HTML和CSS代码...">
+<!-- 在这里修改代码，然后点击运行！ -->
+<style>
+.game-box {
+  width: 80px;
+  height: 80px;
+  background: red;
+  margin: 30px;
+  text-align: center;
+  line-height: 80px;
+  color: white;
+  font-weight: bold;
+}
+</style>
+
+<div class="game-box">玩家</div>
+            </textarea>
+            <button class="btn-run" onclick="runCode()">▶️ 运行代码</button>
+        </div>
+    </div>
+
+    <script>
+        // 默认先加载一次代码
+        window.onload = function() {
+            runCode();
+        };
+
+        // 运行代码：将编辑区代码渲染到预览区
+        function runCode() {
+            const code = document.getElementById("code-input").value;
+            const view = document.getElementById("game-view");
+            view.innerHTML = code;
+        }
+    </script>
+</body>
+</html>

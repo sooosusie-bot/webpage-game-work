@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>蛋仔吃芒果 - 编程学习游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+
+        .game-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: #f8f1ff;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .game-play {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(186, 85, 211, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-title {
+            font-size: 24px;
+            color: #9370db;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .game-info {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #6a5acd;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 500px;
+            background: #f0e6ff;
+            border: 3px solid #dda0dd;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ======================
+           蛋仔派对风格（紫色）
+           ====================== */
+        .egg {
+            width: 50px;
+            height: 50px;
+            background: #9370db;
+            border-radius: 50%;
+            position: absolute;
+            transition: 0.1s linear;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .egg::before {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 12px;
+            left: 8px;
+        }
+        .egg::after {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 12px;
+            right: 8px;
+        }
+
+        .eye-ball {
+            width: 6px;
+            height: 6px;
+            background: #222;
+            border-radius: 50%;
+            position: absolute;
+            top: 18px;
+            left: 11px;
+        }
+        .eye-ball.right {
+            left: auto;
+            right: 11px;
+        }
+
+        .cheek {
+            width: 8px;
+            height: 5px;
+            background: #ffb6c1;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 16px;
+            left: 6px;
+            opacity: 0.7;
+        }
+        .cheek.right {
+            left: auto;
+            right: 6px;
+        }
+
+        .hand {
+            width: 8px;
+            height: 12px;
+            background: #9370db;
+            border-radius: 50%;
+            position: absolute;
+            top: 30px;
+            left: -4px;
+        }
+        .hand.right {
+            left: auto;
+            right: -4px;
+        }
+
+        .foot {
+            width: 10px;
+            height: 10px;
+            background: #9370db;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -4px;
+            left: 10px;
+        }
+        .foot.right {
+            left: auto;
+            right: 10px;
+        }
+
+        /* ======================
+           纯CSS手绘真实芒果（无图片）
+           ====================== */
+        .mango {
+            width: 28px;
+            height: 36px;
+            position: absolute;
+            background: linear-gradient(15deg, #ffcc33 0%, #ff9900 70%, #e68a00 100%);
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+        }
+
+        /* 芒果叶子 */
+        .mango::before {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 14px;
+            background: #2ecc71;
+            border-radius: 50% 0 50% 0;
+            top: -7px;
+            left: 9px;
+            transform: rotate(-10deg);
+        }
+
+        /* 芒果果蒂 */
+        .mango::after {
+            content: "";
+            position: absolute;
+            width: 3px;
+            height: 5px;
+            background: #8b4513;
+            top: -2px;
+            left: 12px;
+        }
+
+        /* ======================
+           获胜弹窗：跳舞骷髅头
+           ====================== */
+        .win-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #111;
+            padding: 40px 60px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px #ff00ff;
+            text-align: center;
+            z-index: 999;
+            display: none;
+            color: white;
+        }
+        .win-modal h2 {
+            font-size: 28px;
+            color: #ff00ff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px magenta;
+        }
+
+        .skully {
+            width: 100px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+            animation: dance 0.6s infinite alternate ease-in-out;
+        }
+        .skully::after {
+            content: "☠️";
+            font-size: 80px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        @keyframes dance {
+            from { transform: rotate(-15deg) scale(0.95); }
+            to   { transform: rotate(15deg) scale(1.05); }
+        }
+
+        .win-modal button {
+            padding: 12px 24px;
+            background: #9370db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* 右侧代码编辑区 */
+        .code-editor {
+            flex: 1;
+            background: #2d2d2d;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .code-title {
+            color: #dda0dd;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        textarea {
+            flex: 1;
+            background: #1e1e1e;
+            color: #f8f8f2;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            resize: none;
+            margin-bottom: 15px;
+            font-family: Consolas, monospace;
+        }
+        .run-btn {
+            padding: 12px;
+            background: #9370db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .run-btn:hover {
+            background: #6a5acd;
+        }
+
+        .guide {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0e6ff;
+            border-radius: 8px;
+            color: #6a5acd;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-play">
+            <div class="game-title">🥭 紫色蛋仔吃芒果 🥭</div>
+            <div class="game-info">
+                <span>已吃芒果：<span id="score">0</span>/25</span>
+                <span>操控：方向键</span>
+            </div>
+            <div id="game-canvas">
+                <div class="egg" id="player">
+                    <div class="eye-ball"></div>
+                    <div class="eye-ball right"></div>
+                    <div class="cheek"></div>
+                    <div class="cheek right"></div>
+                    <div class="hand"></div>
+                    <div class="hand right"></div>
+                    <div class="foot"></div>
+                    <div class="foot right"></div>
+                </div>
+            </div>
+            <div class="guide">
+                <strong>📖 使用说明：</strong><br>
+                1. 键盘↑↓←→控制紫色蛋仔移动<br>
+                2. 吃到芒果计分+1，集齐25个获胜<br>
+                3. 右侧可修改HTML/CSS代码，点击【运行代码】实时生效<br>
+                4. 芒果是纯CSS手绘，无图片、无贴图！
+            </div>
+        </div>
+
+        <div class="code-editor">
+            <div class="code-title">💻 代码编辑区</div>
+            <textarea id="codeArea" spellcheck="false">
+/* 可修改蛋仔、芒果样式 */
+.egg {
+  width: 50px;
+  height: 50px;
+  background: #9370db;
+}
+.mango {
+  background: linear-gradient(15deg, #ffcc33, #ff9900);
+}
+#game-canvas {
+  background: #f0e6ff;
+}
+            </textarea>
+            <button class="run-btn" onclick="runCode()">▶️ 运行代码</button>
+        </div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <h2>🎉 你赢啦！ 🎉</h2>
+        <div class="skully"></div>
+        <p>紫色蛋仔吃完25个芒果！</p>
+        <button onclick="restartGame()">再来一局</button>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const canvas = document.getElementById('game-canvas');
+        const scoreText = document.getElementById('score');
+        const winModal = document.getElementById('winModal');
+        let score = 0;
+        const winScore = 25;
+        let playerX = 200;
+        let playerY = 200;
+        const speed = 10;
+
+        updatePlayerPos();
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': playerY -= speed; break;
+                case 'ArrowDown': playerY += speed; break;
+                case 'ArrowLeft': playerX -= speed; break;
+                case 'ArrowRight': playerX += speed; break;
+            }
+            playerX = Math.max(0, Math.min(canvas.clientWidth - 50, playerX));
+            playerY = Math.max(0, Math.min(canvas.clientHeight - 50, playerY));
+            updatePlayerPos();
+            checkEatMango();
+        });
+
+        function updatePlayerPos() {
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+        }
+
+        function createMango() {
+            const mango = document.createElement('div');
+            mango.classList.add('mango');
+            const maxX = canvas.clientWidth - 28;
+            const maxY = canvas.clientHeight - 36;
+            mango.style.left = Math.random() * maxX + 'px';
+            mango.style.top = Math.random() * maxY + 'px';
+            canvas.appendChild(mango);
+        }
+
+        for(let i=0; i<10; i++) createMango();
+
+        function checkEatMango() {
+            const mangos = document.querySelectorAll('.mango');
+            mangos.forEach(mango => {
+                const pRect = player.getBoundingClientRect();
+                const mRect = mango.getBoundingClientRect();
+                if( pRect.left < mRect.right && pRect.right > mRect.left &&
+                    pRect.top < mRect.bottom && pRect.bottom > mRect.top ) {
+                    mango.remove();
+                    score++;
+                    scoreText.textContent = score;
+                    createMango();
+                    if(score >= winScore) {
+                        winModal.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        function runCode() {
+            const code = document.getElementById('codeArea').value;
+            const style = document.createElement('style');
+            style.textContent = code;
+            document.head.appendChild(style);
+        }
+
+        function restartGame() {
+            score = 0;
+            scoreText.textContent = 0;
+            winModal.style.display = 'none';
+            playerX = 200;
+            playerY = 200;
+            updatePlayerPos();
+            document.querySelectorAll('.mango').forEach(m => m.remove());
+            for(let i=0; i<10; i++) createMango();
+        }
+    </script>
+</body>
+</html>

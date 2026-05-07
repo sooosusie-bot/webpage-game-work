@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极限代码闯关 - 技能完整版</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei",sans-serif}
+        .main-container{display:flex;width:100vw;height:100vh;background:#1a1a2e;overflow:hidden}
+        .code-panel{width:40%;background:#16213e;padding:20px;display:flex;flex-direction:column;border-right:3px solid #0f3460}
+        .panel-title{color:#e94560;font-size:22px;margin-bottom:15px;text-align:center;font-weight:bold}
+        .code-editor{flex:1;background:#0f3460;color:#fff;border:none;border-radius:8px;padding:15px;font-size:14px;resize:none;outline:none;font-family:"Consolas",monospace;line-height:1.5}
+        .control-buttons{margin-top:15px;display:flex;gap:10px}
+        .btn{flex:1;padding:12px;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;transition:.3s}
+        .run-btn{background:#00f5d4;color:#0f3460}
+        .reset-btn{background:#e94560;color:#fff}
+        .btn:hover{transform:scale(1.03);opacity:.9}
+        .game-panel{width:60%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+        .game-title{color:#fff;font-size:28px;margin-bottom:10px;text-shadow:0 0 10px #00f5d4}
+        .game-info{color:#aed6f1;font-size:16px;margin-bottom:20px;display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+        #gameCanvas{border:4px solid #00f5d4;border-radius:10px;background:#000;box-shadow:0 0 20px rgba(0,245,212,.3)}
+        .tips{margin-top:15px;color:#f7dc6f;font-size:14px;text-align:center;line-height:1.4}
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="code-panel">
+            <h2 class="panel-title">📝 代码编辑区</h2>
+            <textarea class="code-editor" id="codeEditor" spellcheck="false">
+// 可修改游戏参数，修改后点【运行代码】生效
+// 玩家
+const PLAYER_SIZE = 20;
+const PLAYER_SPEED = 5;
+const PLAYER_COLOR = "#00f5d4";
+
+// 障碍物
+const OBSTACLE_COUNT = 12;
+const OBSTACLE_SPEED = 4;
+const OBSTACLE_COLOR = "#e94560";
+
+// 难度
+const SPEED_UP_RATE = 1.08;
+
+// 瞬移（空格）
+const TELEPORT_DISTANCE = 80;
+const TELEPORT_COOLDOWN = 800;
+
+// 护盾（Q）
+const SHIELD_DURATION = 2000;
+const SHIELD_COOLDOWN = 5000;
+
+// 狂暴加速（E）
+const RUSH_SPEED = 12;
+const RUSH_DURATION = 800;
+const RUSH_COOLDOWN = 6000;
+            </textarea>
+            <div class="control-buttons">
+                <button class="btn run-btn" onclick="runGameCode()">▶ 运行代码</button>
+                <button class="btn reset-btn" onclick="resetGame()">🔄 重置游戏</button>
+            </div>
+        </div>
+
+        <div class="game-panel">
+            <h1 class="game-title">🎮 极限躲避闯关（技能版）</h1>
+            <div class="game-info">
+                <span>分数：<span id="score">0</span></span>
+                <span>关卡：<span id="level">1</span></span>
+                <span>状态：<span id="status">准备就绪</span></span>
+                <span>空格=瞬移</span>
+                <span>Q=护盾</span>
+                <span>E=狂暴</span>
+            </div>
+            <canvas id="gameCanvas" width="600" height="500"></canvas>
+            <div class="tips">
+                操作：WASD / 方向键移动<br>
+                规则：躲避障碍物，坚持越久分数越高<br>
+                学习：修改左侧代码，实时改变游戏效果
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreText = document.getElementById("score");
+        const levelText = document.getElementById("level");
+        const statusText = document.getElementById("status");
+        const codeEditor = document.getElementById("codeEditor");
+
+        let gameConfig = {
+            PLAYER_SIZE:20,PLAYER_SPEED:5,PLAYER_COLOR:"#00f5d4",
+            OBSTACLE_COUNT:12,OBSTACLE_SPEED:4,OBSTACLE_COLOR:"#e94560",
+            SPEED_UP_RATE:1.08,
+            TELEPORT_DISTANCE:80,TELEPORT_COOLDOWN:800,
+            SHIELD_DURATION:2000,SHIELD_COOLDOWN:5000,
+            RUSH_SPEED:12,RUSH_DURATION:800,RUSH_COOLDOWN:6000
+        };
+
+        let player = {x:canvas.width/2, y:canvas.height/2};
+        let obstacles = [];
+        let score = 0, level = 1, gameRunning = false, gameFrame = null;
+        let keys = {};
+
+        let skills = {
+            teleport:{time:0, cd:800},
+            shield:{active:false, time:0, cd:5000},
+            rush:{active:false, time:0, cd:6000}
+        };
+
+        document.addEventListener("keydown",e=>{keys[e.key]=true});
+        document.addEventListener("keyup",e=>{keys[e.key]=false});
+
+        function runGameCode(){
+            try{
+                const temp={};
+                new Function("c",codeEditor.value+`
+                    c.PLAYER_SIZE=PLAYER_SIZE; c.PLAYER_SPEED=PLAYER_SPEED; c.PLAYER_COLOR=PLAYER_COLOR;
+                    c.OBSTACLE_COUNT=OBSTACLE_COUNT; c.OBSTACLE_SPEED=OBSTACLE_SPEED; c.OBSTACLE_COLOR=OBSTACLE_COLOR;
+                    c.SPEED_UP_RATE=SPEED_UP_RATE;
+                    c.TELEPORT_DISTANCE=TELEPORT_DISTANCE; c.TELEPORT_COOLDOWN=TELEPORT_COOLDOWN;
+                    c.SHIELD_DURATION=SHIELD_DURATION; c.SHIELD_COOLDOWN=SHIELD_COOLDOWN;
+                    c.RUSH_SPEED=RUSH_SPEED; c.RUSH_DURATION=RUSH_DURATION; c.RUSH_COOLDOWN=RUSH_COOLDOWN;
+                `)(temp);
+                gameConfig=temp;
+                skills.teleport.cd=gameConfig.TELEPORT_COOLDOWN;
+                skills.shield.cd=gameConfig.SHIELD_COOLDOWN;
+                skills.rush.cd=gameConfig.RUSH_COOLDOWN;
+                resetGame();
+                statusText.textContent="运行成功！";
+                statusText.style.color="#00f5d4";
+            }catch(e){
+                statusText.textContent="代码错误";
+                statusText.style.color="#e94560";
+                alert("错误："+e.message);
+            }
+        }
+
+        function useSkill(){
+            const now=Date.now();
+            if(keys[" "]&&now-skills.teleport.time>skills.teleport.cd){
+                skills.teleport.time=now;
+                let d=gameConfig.TELEPORT_DISTANCE;
+                if(keys.w||keys.ArrowUp)player.y-=d;
+                if(keys.s||keys.ArrowDown)player.y+=d;
+                if(keys.a||keys.ArrowLeft)player.x-=d;
+                if(keys.d||keys.ArrowRight)player.x+=d;
+            }
+            if(keys.q&&now-skills.shield.time>skills.shield.cd){
+                skills.shield.time=now; skills.shield.active=true;
+                setTimeout(()=>skills.shield.active=false,gameConfig.SHIELD_DURATION);
+            }
+            if(keys.e&&now-skills.rush.time>skills.rush.cd){
+                skills.rush.time=now; skills.rush.active=true;
+                setTimeout(()=>skills.rush.active=false,gameConfig.RUSH_DURATION);
+            }
+        }
+
+        function createObstacles(){
+            obstacles=[];
+            let cnt=Math.max(1,Math.min(30,gameConfig.OBSTACLE_COUNT));
+            for(let i=0;i<cnt;i++){
+                obstacles.push({
+                    x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+                    dx:(Math.random()-0.5)*gameConfig.OBSTACLE_SPEED*2,
+                    dy:(Math.random()-0.5)*gameConfig.OBSTACLE_SPEED*2
+                });
+            }
+        }
+
+        function movePlayer(){
+            let speed=skills.rush.active?gameConfig.RUSH_SPEED:gameConfig.PLAYER_SPEED;
+            let size=gameConfig.PLAYER_SIZE;
+            if((keys.w||keys.ArrowUp)&&player.y>size/2)player.y-=speed;
+            if((keys.s||keys.ArrowDown)&&player.y<canvas.height-size/2)player.y+=speed;
+            if((keys.a||keys.ArrowLeft)&&player.x>size/2)player.x-=speed;
+            if((keys.d||keys.ArrowRight)&&player.x<canvas.width-size/2)player.x+=speed;
+        }
+
+        function moveObstacles(){
+            obstacles.forEach(o=>{
+                o.x+=o.dx; o.y+=o.dy;
+                if(o.x<=0||o.x>=canvas.width)o.dx*=-1;
+                if(o.y<=0||o.y>=canvas.height)o.dy*=-1;
+            });
+        }
+
+        function checkCollision(){
+            if(skills.shield.active)return;
+            let r=gameConfig.PLAYER_SIZE/2;
+            for(let o of obstacles){
+                if(Math.hypot(player.x-o.x,player.y-o.y)<r+8){
+                    gameOver();
+                }
+            }
+        }
+
+        function levelUp(){
+            level++;
+            gameConfig.OBSTACLE_SPEED*=gameConfig.SPEED_UP_RATE;
+            createObstacles();
+            levelText.textContent=level;
+        }
+
+        function gameOver(){
+            gameRunning=false;
+            cancelAnimationFrame(gameFrame);
+            statusText.textContent="游戏结束";
+            statusText.style.color="#e94560";
+            setTimeout(()=>alert(`游戏结束！\n分数：${score}\n关卡：${level}`),100);
+        }
+
+        function resetGame(){
+            cancelAnimationFrame(gameFrame);
+            player={x:canvas.width/2,y:canvas.height/2};
+            score=0; level=1; gameRunning=true;
+            skills={
+                teleport:{time:0,cd:gameConfig.TELEPORT_COOLDOWN},
+                shield:{active:false,time:0,cd:gameConfig.SHIELD_COOLDOWN},
+                rush:{active:false,time:0,cd:gameConfig.RUSH_COOLDOWN}
+            };
+            scoreText.textContent=score;
+            levelText.textContent=level;
+            statusText.textContent="游戏中";
+            statusText.style.color="#00f5d4";
+            createObstacles();
+            gameLoop();
+        }
+
+        function drawGame(){
+            ctx.fillStyle="#000";
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            let color=gameConfig.PLAYER_COLOR;
+            if(skills.shield.active)color="#4fc3f7";
+            if(skills.rush.active)color="#ffeb3b";
+
+            ctx.fillStyle=color;
+            ctx.beginPath();
+            ctx.arc(player.x,player.y,gameConfig.PLAYER_SIZE/2,0,Math.PI*2);
+            ctx.fill();
+
+            if(skills.shield.active){
+                ctx.strokeStyle="#4fc3f7";
+                ctx.lineWidth=3;
+                ctx.beginPath();
+                ctx.arc(player.x,player.y,gameConfig.PLAYER_SIZE/2+8,0,Math.PI*2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle=gameConfig.OBSTACLE_COLOR;
+            obstacles.forEach(o=>{
+                ctx.beginPath();
+                ctx.arc(o.x,o.y,8,0,Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        function gameLoop(){
+            if(!gameRunning)return;
+            useSkill();
+            movePlayer();
+            moveObstacles();
+            checkCollision();
+            drawGame();
+            score++;
+            scoreText.textContent=score;
+            if(score%500===0)levelUp();
+            gameFrame=requestAnimationFrame(gameLoop);
+        }
+
+        window.onload=runGameCode;
+    </script>
+</body>
+</html>

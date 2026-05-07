@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>坦克大战 · 鼠标瞄准版</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:monospace}
+        body{background:#111;color:#fff;padding:10px;display:flex;flex-direction:column;align-items:center}
+        .title{font-size:22px;color:#0f0;margin-bottom:6px}
+        .tips{font-size:12px;color:#999;margin-bottom:10px}
+        .wrap{display:flex;gap:12px;max-width:1000px;width:100%}
+        #game{border:2px solid #0f0;background:#000;width:600px;height:600px}
+        .code-panel{flex:1;display:flex;flex-direction:column;gap:8px}
+        #code{height:360px;background:#181818;color:#0f0;border:1px solid #070;padding:10px;font-size:12px}
+        .btns{display:flex;gap:8px}
+        button{flex:1;padding:8px;font-weight:bold;border:none;cursor:pointer;color:#fff}
+        #apply{background:#070}
+        #reset{background:#700}
+    </style>
+</head>
+<body>
+    <div class="title">坦克大战 · 鼠标瞄准版</div>
+    <div class="tips">WASD 移动 | 鼠标瞄准 | 左键射击 | 敌人全图随机刷新</div>
+    <div class="wrap">
+        <canvas id="game"></canvas>
+        <div class="code-panel">
+            <textarea id="code">// 修改参数后点【应用代码】
+PLAYER_SPEED = 4.5;
+BULLET_SPEED = 9;
+ENEMY_SPEED = 2.2;
+ENEMY_BULLET_SPEED = 5;
+ENEMY_FIRE_RATE = 1000;
+ENEMY_SPAWN_INTERVAL = 2000;
+MAX_ENEMY_COUNT = 6;</textarea>
+            <div class="btns">
+                <button id="apply">应用代码</button>
+                <button id="reset">重置游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 600;
+
+        // 游戏参数
+        let PLAYER_SPEED = 4.5;
+        let BULLET_SPEED = 9;
+        let ENEMY_SPEED = 2.2;
+        let ENEMY_BULLET_SPEED = 5;
+        let ENEMY_FIRE_RATE = 1000;
+        let ENEMY_SPAWN_INTERVAL = 2000;
+        let MAX_ENEMY_COUNT = 6;
+
+        // 玩家
+        let player = {
+            x: 300, y: 500, w: 26, h: 32,
+            angle: 0, fireCD:0,
+            color: '#0f0'
+        };
+
+        let bullets = [];
+        let enemies = [];
+        let enemyBullets = [];
+        let effects = [];
+        let walls = [];
+        let keys = {};
+        let mouse = {x:300,y:300};
+        let gameOver = false; // 死亡标记
+
+        // 生成地图砖墙
+        function generateMap(){
+            walls=[];
+            for(let i=0;i<18;i++){
+                walls.push({
+                    x:Math.random()*540+20,
+                    y:Math.random()*440+40,
+                    w:24,h:24
+                })
+            }
+        }
+
+        // 鼠标瞄准
+        canvas.addEventListener('mousemove',(e)=>{
+            if(gameOver) return;
+            const rect=canvas.getBoundingClientRect();
+            mouse.x = e.clientX-rect.left;
+            mouse.y = e.clientY-rect.top;
+            player.angle = Math.atan2(mouse.y-player.y, mouse.x-player.x);
+        });
+
+        // 鼠标射击
+        canvas.addEventListener('click',()=>{
+            if(gameOver) return;
+            if(player.fireCD>0)return;
+            player.fireCD=280;
+            const bx=player.x+Math.cos(player.angle)*20;
+            const by=player.y+Math.sin(player.angle)*20;
+            bullets.push({
+                x:bx,y:by,
+                vx:Math.cos(player.angle)*BULLET_SPEED,
+                vy:Math.sin(player.angle)*BULLET_SPEED
+            });
+            effects.push({x:bx,y:by,t:8});
+        });
+
+        // 向量移动
+        function vec(from,to,speed){
+            const dx=to.x-from.x;
+            const dy=to.y-from.y;
+            const d=Math.hypot(dx,dy);
+            return d<1?{x:0,y:0}:{x:dx/d*speed,y:dy/d*speed};
+        }
+
+        // 生成敌人（全图随机）
+        function spawnEnemy(){
+            if(gameOver) return;
+            if(enemies.length>=MAX_ENEMY_COUNT)return;
+            enemies.push({
+                x:Math.random()*540+30,
+                y:Math.random()*240+40,
+                w:26,h:32,fireCD:0
+            });
+        }
+
+        // 碰撞
+        function hit(a,b){
+            return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+        }
+
+        // 绘制旋转物体
+        function drawRotated(obj,color){
+            ctx.save();
+            ctx.translate(obj.x+obj.w/2, obj.y+obj.h/2);
+            ctx.rotate(obj.angle);
+            ctx.fillStyle=color;
+            ctx.fillRect(-obj.w/2,-obj.h/2,obj.w,obj.h);
+            ctx.fillRect(-3,-20,6,16);
+            ctx.restore();
+        }
+
+        // 主循环
+        function loop(){
+            ctx.fillStyle='#000';
+            ctx.fillRect(0,0,600,600);
+
+            // 墙壁
+            ctx.fillStyle='#444';
+            walls.forEach(w=>ctx.fillRect(w.x,w.y,w.w,w.h));
+
+            if(!gameOver){
+                // 玩家
+                drawRotated(player,'#0f0');
+
+                // 玩家子弹 + 子弹碰墙消失
+                ctx.fillStyle='#fff';
+                bullets.forEach((b,i)=>{
+                    b.x+=b.vx; b.y+=b.vy;
+                    ctx.fillRect(b.x-2,b.y-2,4,4);
+                    walls.forEach(w=>{if(hit(b,w)){bullets.splice(i,1);}});
+                    if(b.x<-10||b.x>610||b.y<-10||b.y>610)bullets.splice(i,1);
+                });
+
+                // 敌人
+                enemies.forEach((en,i)=>{
+                    const v=vec(en,player,ENEMY_SPEED);
+                    en.x+=v.x; en.y+=v.y;
+                    en.angle=Math.atan2(player.y-en.y,player.x-en.x);
+
+                    // 墙壁阻挡
+                    walls.forEach(w=>{
+                        if(hit(en,w)){
+                            en.x-=v.x*0.7;
+                            en.y-=v.y*0.7;
+                        }
+                    });
+
+                    // 射击
+                    en.fireCD-=16;
+                    if(en.fireCD<=0){
+                        const ex=en.x+Math.cos(en.angle)*25;
+                        const ey=en.y+Math.sin(en.angle)*25;
+                        enemyBullets.push({
+                            x:ex,y:ey,
+                            vx:Math.cos(en.angle)*ENEMY_BULLET_SPEED,
+                            vy:Math.sin(en.angle)*ENEMY_BULLET_SPEED
+                        });
+                        en.fireCD=ENEMY_FIRE_RATE;
+                    }
+
+                    drawRotated(en,'#f40');
+                });
+
+                // 敌方子弹 + 子弹碰墙消失
+                ctx.fillStyle='#fa0';
+                enemyBullets.forEach((b,i)=>{
+                    b.x+=b.vx; b.y+=b.vy;
+                    ctx.fillRect(b.x-2,b.y-2,4,4);
+                    walls.forEach(w=>{if(hit(b,w)){enemyBullets.splice(i,1);}});
+                    if(b.x<-10||b.x>610||b.y<-10||b.y>610)enemyBullets.splice(i,1);
+                });
+
+                // 玩家移动
+                player.fireCD-=16;
+                let vx=0,vy=0;
+                if(keys['a'])vx=-PLAYER_SPEED;
+                if(keys['d'])vx=PLAYER_SPEED;
+                if(keys['w'])vy=-PLAYER_SPEED;
+                if(keys['s'])vy=PLAYER_SPEED;
+
+                const nx=player.x+vx;
+                const ny=player.y+vy;
+                let canMove=true;
+                walls.forEach(w=>{
+                    if(hit({x:nx,y:ny,w:player.w,h:player.h},w))canMove=false;
+                });
+                if(canMove){player.x=nx;player.y=ny;}
+
+                // 边界
+                if(player.x<0)player.x=0;
+                if(player.x+player.w>600)player.x=600-player.w;
+                if(player.y<0)player.y=0;
+                if(player.y+player.h>600)player.y=600-player.h;
+            }else{
+                // 死亡后显示游戏结束
+                ctx.fillStyle='#f00';
+                ctx.font='40px monospace';
+                ctx.textAlign='center';
+                ctx.fillText('你已死亡',300,240);
+                ctx.font='20px monospace';
+                ctx.fillText('点击重置游戏重新开始',300,300);
+            }
+
+            // 爆炸特效
+            ctx.fillStyle='#ff0';
+            effects.forEach((e,i)=>{
+                ctx.beginPath();
+                ctx.arc(e.x,e.y,e.t,0,Math.PI*2);
+                ctx.fill();
+                e.t-=0.4;
+                if(e.t<=0)effects.splice(i,1);
+            });
+
+            // 子弹打敌人
+            bullets.forEach((b,bi)=>{
+                enemies.forEach((en,ei)=>{
+                    if(hit(b,en)){
+                        effects.push({x:en.x+13,y:en.y+16,t:16});
+                        bullets.splice(bi,1);
+                        enemies.splice(ei,1);
+                    }
+                });
+            });
+
+            // 敌人子弹打玩家 → 死亡
+            enemyBullets.forEach((b,i)=>{
+                if(hit(b,player)){
+                    effects.push({x:player.x+13,y:player.y+16,t:22});
+                    enemyBullets.splice(i,1);
+                    gameOver = true; // 直接死亡
+                }
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        // 按键
+        window.addEventListener('keydown',e=>keys[e.key]=true);
+        window.addEventListener('keyup',e=>keys[e.key]=false);
+
+        // 应用/重置
+        document.getElementById('apply').onclick=()=>{
+            try{eval(document.getElementById('code').value);alert('已应用');}
+            catch(e){alert('错误：'+e.message);}
+        };
+        document.getElementById('reset').onclick=()=>{
+            player={x:300,y:500,w:26,h:32,angle:0,fireCD:0};
+            bullets=[];enemies=[];enemyBullets=[];effects=[];
+            generateMap();
+            gameOver = false;
+            PLAYER_SPEED=4.5;BULLET_SPEED=9;ENEMY_SPEED=2.2;
+            ENEMY_BULLET_SPEED=5;ENEMY_FIRE_RATE=1000;
+            ENEMY_SPAWN_INTERVAL=2000;MAX_ENEMY_COUNT=6;
+        };
+
+        generateMap();
+        setInterval(spawnEnemy,ENEMY_SPAWN_INTERVAL);
+        loop();
+    </script>
+</body>
+</html>

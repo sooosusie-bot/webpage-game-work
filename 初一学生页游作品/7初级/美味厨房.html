@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豪华美食烹饪小游戏 | 编程实践课</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #f3f4f6;
+            padding: 16px;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .wrap {
+            display: flex;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            height: calc(100vh - 100px);
+        }
+        /* 代码区 */
+        .code-box {
+            flex: 1;
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .code-box h3 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        #code {
+            flex: 1;
+            background: #2d2d2d;
+            color: #ccc;
+            border: 0;
+            padding: 15px;
+            font-size: 13px;
+            font-family: Consolas,monospace;
+            resize: none;
+            outline: none;
+        }
+        .btn-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .run {
+            background: #28a745;
+            color: #fff;
+        }
+        .reset {
+            background: #6c757d;
+            color: #fff;
+        }
+        /* 游戏区 */
+        .game-box {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px #00000015;
+        }
+        .game-box h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        #gameView {
+            height: calc(100% - 30px);
+            border: 2px dashed #eee;
+            padding: 20px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>👩‍🍳 豪华美食烹饪小游戏 · 代码实践课</h1>
+    <div class="wrap">
+        <div class="code-box">
+            <h3>📝 可编辑代码区</h3>
+<textarea id="code">
+<div class="game">
+    <h2>🍱 欢乐小厨房</h2>
+    <p>选择食材，做出美味大餐！</p>
+
+    <div class="ingredients">
+        <button onclick="add('鸡蛋')">🥚 鸡蛋</button>
+        <button onclick="add('番茄')">🍅 番茄</button>
+        <button onclick="add('牛肉')">🥩 牛肉</button>
+        <button onclick="add('米饭')">🍚 米饭</button>
+        <button onclick="add('青菜')">🥬 青菜</button>
+        <button onclick="add('火腿')">🥓 火腿</button>
+        <button onclick="add('黄瓜')">🥒 黄瓜</button>
+        <button onclick="add('面条')">🍜 面条</button>
+        <button onclick="add('土豆')">🥔 土豆</button>
+        <button onclick="add('鸡肉')">🍗 鸡肉</button>
+        <button onclick="add('虾仁')">🍤 虾仁</button>
+        <button onclick="add('蘑菇')">🍄 蘑菇</button>
+        <button onclick="add('玉米')">🌽 玉米</button>
+        <button onclick="add('胡萝卜')">🥕 胡萝卜</button>
+        <button onclick="add('洋葱')">🧅 洋葱</button>
+        <button onclick="add('豆腐')">🥢 豆腐</button>
+    </div>
+
+    <div class="selected">
+        已选食材：<span id="list">暂无</span>
+    </div>
+
+    <div class="btns">
+        <button onclick="cook()" class="cook">开始烹饪</button>
+        <button onclick="clearAll()" class="clear">清空重来</button>
+    </div>
+
+    <div class="result" id="result"></div>
+    <div id="foodImg" style="margin-top:15px;"></div>
+</div>
+
+<style>
+.game{
+    max-width:600px;
+    margin:20px auto;
+    background-image: url('https://i.ibb.co/5vLwL4R/kitchen-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    padding:40px 30px;
+    border-radius:20px;
+    text-align:center;
+    color:#333;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.game h2{
+    color:#ff4081;
+    margin-bottom:15px;
+    font-size:28px;
+    text-shadow: 1px 1px 2px #fff;
+}
+.ingredients button{
+    margin:6px;
+    padding:10px 16px;
+    background:#ff9800;
+    border:none;
+    border-radius:10px;
+    color:white;
+    font-size:15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.ingredients button:hover{
+    background:#ff5722;
+    transform: scale(1.05);
+}
+.selected{
+    margin:20px 0;
+    font-size:17px;
+    color:#222;
+    background:rgba(255,255,255,0.8);
+    padding:10px;
+    border-radius:10px;
+}
+.btns button{
+    padding:12px 26px;
+    border:none;
+    border-radius:12px;
+    margin:8px;
+    font-size:16px;
+    font-weight:bold;
+}
+.cook{
+    background:#e91e63;
+    color:white;
+}
+.clear{
+    background:#607d8b;
+    color:white;
+}
+.result{
+    font-size:22px;
+    font-weight:bold;
+    margin-top:15px;
+    color:#222;
+    background:rgba(255,255,255,0.9);
+    padding:12px;
+    border-radius:10px;
+}
+#foodImg img{
+    width:200px;
+    border-radius:15px;
+    margin-top:10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+</style>
+
+<script>
+let arr = [];
+function add(name){
+    if(!arr.includes(name)) arr.push(name);
+    document.getElementById("list").innerText = arr.join(" + ");
+}
+
+function cook(){
+    let r = document.getElementById("result");
+    let img = document.getElementById("foodImg");
+    let str = arr.join("");
+
+    if(str.includes("鸡蛋") && str.includes("番茄")){
+        r.innerText = "✅ 完成：番茄炒鸡蛋 🥘";
+        img.innerHTML = '<img src="https://i.ibb.co/85Rt1Lz/tomato-egg.jpg">';
+    }
+    else if(str.includes("牛肉") && str.includes("米饭")){
+        r.innerText = "✅ 完成：牛肉盖浇饭 🍚";
+        img.innerHTML = '<img src="https://i.ibb.co/N20VjLz/beef-rice.jpg">';
+    }
+    else if(str.includes("鸡蛋") && str.includes("火腿")){
+        r.innerText = "✅ 完成：火腿炒蛋 🥓";
+        img.innerHTML = '<img src="https://i.ibb.co/GkjZ1Jk/ham-egg.jpg">';
+    }
+    else if(str.includes("鸡肉") && str.includes("米饭")){
+        r.innerText = "✅ 完成：鸡肉饭 🍗";
+        img.innerHTML = '<img src="https://i.ibb.co/5kFvX0B/chicken-rice.jpg">';
+    }
+    else if(str.includes("土豆") && str.includes("牛肉")){
+        r.innerText = "✅ 完成：土豆烧牛肉 🥔";
+        img.innerHTML = '<img src="https://i.ibb.co/0CXxwLs/potato-beef.jpg">';
+    }
+    else if(str.includes("青菜") && str.includes("火腿")){
+        r.innerText = "✅ 完成：青菜炒火腿 🥬";
+        img.innerHTML = '<img src="https://i.ibb.co/0t0vLzr/green-ham.jpg">';
+    }
+    else if(str.includes("面条")){
+        r.innerText = "✅ 完成：清汤面条 🍜";
+        img.innerHTML = '<img src="https://i.ibb.co/7X0vLzq/noodle.jpg">';
+    }
+    else if(str.includes("米饭")){
+        r.innerText = "✅ 完成：白米饭 🍚";
+        img.innerHTML = '<img src="https://i.ibb.co/5WY5vLr/rice.jpg">';
+    }
+    else if(str.includes("虾仁") && str.includes("鸡蛋")){
+        r.innerText = "✅ 完成：虾仁滑蛋 🍤";
+        img.innerHTML = '<img src="https://i.ibb.co/6nFvL4r/shrimp-egg.jpg">';
+    }
+    else if(str.includes("豆腐") && str.includes("青菜")){
+        r.innerText = "✅ 完成：青菜豆腐汤 🥢";
+        img.innerHTML = '<img src="https://i.ibb.co/5xVvL4r/tofu-soup.jpg">';
+    }
+    else if(str.includes("玉米") && str.includes("胡萝卜")){
+        r.innerText = "✅ 完成：玉米胡萝卜丁 🌽";
+        img.innerHTML = '<img src="https://i.ibb.co/7zFvL4r/corn-carrot.jpg">';
+    }
+    else if(str.includes("蘑菇") && str.includes("鸡肉")){
+        r.innerText = "✅ 完成：蘑菇炒鸡肉 🍄";
+        img.innerHTML = '<img src="https://i.ibb.co/8zFvL4r/mushroom-chicken.jpg">';
+    }
+    else if(str.includes("洋葱") && str.includes("牛肉")){
+        r.innerText = "✅ 完成：洋葱炒牛肉 🧅";
+        img.innerHTML = '<img src="https://i.ibb.co/9zFvL4r/onion-beef.jpg">';
+    }
+    else if(str.includes("黄瓜") && str.includes("鸡蛋")){
+        r.innerText = "✅ 完成：黄瓜炒蛋 🥒";
+        img.innerHTML = '<img src="https://i.ibb.co/0zFvL4r/cucumber-egg.jpg">';
+    }
+    else if(arr.length === 0){
+        r.innerText = "⚠️ 请先选食材！";
+        img.innerHTML = "";
+    }
+    else{
+        r.innerText = "✅ 完成：创意家常菜 🍳";
+        img.innerHTML = '<img src="https://i.ibb.co/6b0vLzr/cook.jpg">';
+    }
+}
+
+function clearAll(){
+    arr = [];
+    document.getElementById("list").innerText = "暂无";
+    document.getElementById("result").innerText = "";
+    document.getElementById("foodImg").innerHTML = "";
+}
+</script>
+</textarea>
+            <div class="btn-group">
+                <button class="run" id="run">▶️ 运行代码</button>
+                <button class="reset" id="reset">🔄 重置代码</button>
+            </div>
+        </div>
+
+        <div class="game-box">
+            <h3>🎮 游戏运行界面</h3>
+            <div id="gameView"></div>
+        </div>
+    </div>
+
+    <script>
+        const code = document.getElementById('code');
+        const gameView = document.getElementById('gameView');
+        const runBtn = document.getElementById('run');
+        const resetBtn = document.getElementById('reset');
+        const defaultCode = code.value;
+
+        runBtn.onclick = function(){
+            gameView.innerHTML = code.value;
+            let scripts = gameView.querySelectorAll('script');
+            scripts.forEach(s=>{
+                let newS = document.createElement('script');
+                newS.textContent = s.textContent;
+                document.body.appendChild(newS).remove();
+            })
+        }
+
+        resetBtn.onclick = function(){
+            code.value = defaultCode;
+            gameView.innerHTML = '';
+        }
+
+        window.onload = ()=> runBtn.click();
+    </script>
+</body>
+</html>

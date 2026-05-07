@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素风动作游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        #gameCanvas {
+            border: 4px solid #4a4a4a;
+            image-rendering: pixelated; /* 关键：保持像素风清晰 */
+            image-rendering: -moz-crisp-edges;
+            background: #2d2b55;
+        }
+        .ui {
+            margin-top: 15px;
+            font-size: 18px;
+            text-shadow: 2px 2px #000;
+        }
+        .controls {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="480" height="360"></canvas>
+    <div class="ui">生命值: <span id="hp">100</span> | 分数: <span id="score">0</span></div>
+    <div class="controls">WASD移动 | 空格/鼠标左键攻击</div>
+
+    <script>
+        // 获取画布与上下文
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const hpText = document.getElementById('hp');
+        const scoreText = document.getElementById('score');
+
+        // ==================== 游戏核心配置 ====================
+        const GAME = {
+            width: canvas.width,
+            height: canvas.height,
+            speed: 2.5, // 角色移动速度
+            attackRange: 30, // 攻击范围
+            attackDamage: 25, // 攻击伤害
+            playerHp: 100,
+            score: 0
+        };
+
+        // 玩家对象（像素矩形实现）
+        const player = {
+            x: GAME.width / 2 - 16,
+            y: GAME.height / 2 - 16,
+            size: 32, // 像素角色尺寸
+            color: '#76ff76', // 像素绿
+            attackTimer: 0,
+            isAttacking: false
+        };
+
+        // 按键控制
+        const keys = {
+            w: false, a: false, s: false, d: false
+        };
+
+        // 敌人数组
+        let enemies = [];
+        const enemySpawnInterval = 1200; // 敌人生成间隔
+
+        // ==================== 工具函数 ====================
+        // 随机数生成
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // 碰撞检测（矩形）
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.size &&
+                   rect1.x + rect1.size > rect2.x &&
+                   rect1.y < rect2.y + rect2.size &&
+                   rect1.y + rect1.size > rect2.y;
+        }
+
+        // ==================== 游戏对象生成 ====================
+        // 生成敌人
+        function spawnEnemy() {
+            // 屏幕边缘随机生成
+            let x, y;
+            const side = random(1, 4);
+            if (side === 1) x = random(0, GAME.width), y = -32;
+            else if (side === 2) x = GAME.width + 32, y = random(0, GAME.height);
+            else if (side === 3) x = random(0, GAME.width), y = GAME.height + 32;
+            else x = -32, y = random(0, GAME.height);
+
+            enemies.push({
+                x, y,
+                size: 28,
+                color: '#ff4757', // 像素红
+                speed: 1.2,
+                hp: 50
+            });
+        }
+
+        // ==================== 渲染函数 ====================
+        // 渲染玩家（像素风格）
+        function renderPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+            
+            // 像素眼睛
+            ctx.fillStyle = '#000';
+            ctx.fillRect(player.x + 8, player.y + 8, 6, 6);
+            ctx.fillRect(player.x + 18, player.y + 8, 6, 6);
+
+            // 攻击动画渲染
+            if (player.isAttacking) {
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(
+                    player.x + player.size/2 - GAME.attackRange/2,
+                    player.y + player.size/2 - GAME.attackRange/2,
+                    GAME.attackRange, GAME.attackRange
+                );
+            }
+        }
+
+        // 渲染敌人
+        function renderEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+                
+                // 敌人像素眼睛
+                ctx.fillStyle = '#000';
+                ctx.fillRect(enemy.x + 5, enemy.y + 5, 4, 4);
+                ctx.fillRect(enemy.x + 19, enemy.y + 5, 4, 4);
+            });
+        }
+
+        // ==================== 逻辑更新 ====================
+        function update() {
+            // 玩家移动
+            if (keys.w && player.y > 0) player.y -= GAME.speed;
+            if (keys.s && player.y < GAME.height - player.size) player.y += GAME.speed;
+            if (keys.a && player.x > 0) player.x -= GAME.speed;
+            if (keys.d && player.x < GAME.width - player.size) player.x += GAME.speed;
+
+            // 攻击冷却
+            if (player.isAttacking) {
+                player.attackTimer++;
+                if (player.attackTimer > 8) {
+                    player.isAttacking = false;
+                    player.attackTimer = 0;
+                }
+            }
+
+            // 敌人AI：追逐玩家
+            enemies.forEach((enemy, index) => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist > 0) {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
+                }
+
+                // 敌人碰撞玩家扣血
+                if (checkCollision(player, enemy)) {
+                    GAME.playerHp -= 0.3;
+                    hpText.textContent = Math.max(0, Math.floor(GAME.playerHp));
+                }
+
+                // 攻击命中敌人
+                if (player.isAttacking) {
+                    const attackBox = {
+                        x: player.x + player.size/2 - GAME.attackRange/2,
+                        y: player.y + player.size/2 - GAME.attackRange/2,
+                        size: GAME.attackRange
+                    };
+                    if (checkCollision(attackBox, enemy)) {
+                        enemy.hp -= GAME.attackDamage;
+                        if (enemy.hp <= 0) {
+                            enemies.splice(index, 1);
+                            GAME.score += 10;
+                            scoreText.textContent = GAME.score;
+                        }
+                    }
+                }
+            });
+
+            // 游戏结束
+            if (GAME.playerHp <= 0) {
+                alert(`游戏结束！最终分数：${GAME.score}`);
+                resetGame();
+            }
+        }
+
+        // 重置游戏
+        function resetGame() {
+            GAME.playerHp = 100;
+            GAME.score = 0;
+            enemies = [];
+            player.x = GAME.width/2 - 16;
+            player.y = GAME.height/2 - 16;
+            hpText.textContent = 100;
+            scoreText.textContent = 0;
+        }
+
+        // ==================== 游戏主循环 ====================
+        function gameLoop() {
+            // 清空画布
+            ctx.fillStyle = '#2d2b55';
+            ctx.fillRect(0, 0, GAME.width, GAME.height);
+
+            update();
+            renderPlayer();
+            renderEnemies();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== 事件监听 ====================
+        // 键盘按下
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'w') keys.w = true;
+            if (e.key === 'a') keys.a = true;
+            if (e.key === 's') keys.s = true;
+            if (e.key === 'd') keys.d = true;
+            if (e.key === ' ' && !player.isAttacking) player.isAttacking = true;
+        });
+
+        // 键盘松开
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'w') keys.w = false;
+            if (e.key === 'a') keys.a = false;
+            if (e.key === 's') keys.s = false;
+            if (e.key === 'd') keys.d = false;
+        });
+
+        // 鼠标攻击
+        canvas.addEventListener('mousedown', () => {
+            if (!player.isAttacking) player.isAttacking = true;
+        });
+
+        // 启动游戏
+        setInterval(spawnEnemy, enemySpawnInterval);
+        gameLoop();
+    </script>
+</body>
+</html>

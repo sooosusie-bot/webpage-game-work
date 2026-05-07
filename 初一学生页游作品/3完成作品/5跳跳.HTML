@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>蛋仔派对小游戏</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #87ceeb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.game-container {
+  position: relative;
+  width: 800px;
+  height: 500px;
+  background: #f8f9fa;
+  border: 4px solid #333;
+  overflow: hidden;
+}
+
+#egg {
+  width: 50px;
+  height: 50px;
+  background: #ffd700;
+  border-radius: 50% 50% 40% 40%;
+  position: absolute;
+  bottom: 100px;
+  left: 100px;
+  transition: transform 0.1s;
+}
+
+.eye {
+  width: 8px;
+  height: 8px;
+  background: #000;
+  border-radius: 50%;
+  position: absolute;
+  top: 15px;
+}
+.eye.left {
+  left: 12px;
+}
+.eye.right {
+  right: 12px;
+}
+
+.mouth {
+  width: 15px;
+  height: 8px;
+  border-bottom: 3px solid #000;
+  border-radius: 50%;
+  position: absolute;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ground {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100px;
+  background: #90ee90;
+}
+
+.obstacle {
+  width: 40px;
+  height: 80px;
+  background: #ff6347;
+  position: absolute;
+  bottom: 100px;
+  right: -40px;
+}
+
+#score {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #222;
+}
+
+#start {
+  padding: 10px 20px;
+  font-size: 18px;
+  background: #ff9500;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+#start:disabled {
+  background: #ccc;
+}
+</style>
+</head>
+<body>
+
+<button id="start">开始游戏</button>
+<div id="score">得分：0</div>
+<div class="game-container" id="game">
+  <div id="egg">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="mouth"></div>
+  </div>
+  <div class="ground"></div>
+</div>
+
+<script>
+const egg = document.getElementById('egg');
+const game = document.getElementById('game');
+const scoreText = document.getElementById('score');
+const startBtn = document.getElementById('start');
+
+let isJumping = false;
+let isGameStart = false;
+let score = 0;
+let gravity = 4;
+let eggY = 100;
+let speed = 5;
+
+// 跳跃
+document.addEventListener('keydown', (e) => {
+  if (!isGameStart) return;
+  if ((e.code === 'Space' || e.key === 'ArrowUp') && !isJumping) {
+    isJumping = true;
+    let jumpPower = 15;
+    const jumpInterval = setInterval(() => {
+      eggY += jumpPower;
+      jumpPower -= 0.8;
+      if (eggY <= 100) {
+        eggY = 100;
+        isJumping = false;
+        clearInterval(jumpInterval);
+      }
+      egg.style.bottom = eggY + 'px';
+    }, 20);
+  }
+});
+
+// 生成障碍物
+function createObstacle() {
+  if (!isGameStart) return;
+  const obs = document.createElement('div');
+  obs.classList.add('obstacle');
+  game.appendChild(obs);
+
+  const moveObs = setInterval(() => {
+    const left = parseInt(obs.style.right || '-40px');
+    obs.style.right = left + speed + 'px';
+
+    // 碰撞
+    const eggRect = egg.getBoundingClientRect();
+    const obsRect = obs.getBoundingClientRect();
+    if (
+      eggRect.left < obsRect.right &&
+      eggRect.right > obsRect.left &&
+      eggRect.bottom > obsRect.top &&
+      eggRect.top < obsRect.bottom
+    ) {
+      clearInterval(moveObs);
+      endGame();
+    }
+
+    // 得分
+    if (parseInt(obs.style.right) > 850) {
+      clearInterval(moveObs);
+      obs.remove();
+      score++;
+      scoreText.textContent = '得分：' + score;
+    }
+  }, 20);
+
+  setTimeout(createObstacle, 1200 + Math.random() * 1000);
+}
+
+// 开始
+startBtn.addEventListener('click', () => {
+  if (isGameStart) return;
+  startBtn.disabled = true;
+  isGameStart = true;
+  score = 0;
+  scoreText.textContent = '得分：0';
+  createObstacle();
+});
+
+function endGame() {
+  isGameStart = false;
+  startBtn.disabled = false;
+  alert('游戏结束！最终得分：' + score);
+  // 清除所有障碍物
+  document.querySelectorAll('.obstacle').forEach(o => o.remove());
+}
+</script>
+</body>
+</html>

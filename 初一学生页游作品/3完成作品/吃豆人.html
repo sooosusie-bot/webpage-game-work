@@ -1,0 +1,418 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编程实践 - 炫酷吃豆人游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: #121212;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .game-panel {
+            flex: 1;
+            background: #1e1e2f;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .game-title {
+            color: #00ffff;
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ffff;
+            border-radius: 8px;
+            background: #0a0a1a;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .game-info {
+            color: white;
+            margin-top: 15px;
+            font-size: 16px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .control-tips {
+            color: #aaa;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .code-panel {
+            flex: 1;
+            background: #1e1e2f;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+        }
+
+        .code-title {
+            color: #ff00ff;
+            font-size: 22px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        #codeEditor {
+            flex: 1;
+            background: #0a0a1a;
+            color: #f8f8f2;
+            border: 2px solid #ff00ff;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        .run-btn {
+            padding: 12px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .run-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="game-panel">
+            <h2 class="game-title">🎮 炫酷吃豆人大冒险</h2>
+            <canvas id="gameCanvas" width="500" height="500"></canvas>
+            <div class="game-info">
+                <div>关卡: <span id="level">1</span></div>
+                <div>得分: <span id="score">0</span></div>
+            </div>
+            <div class="control-tips">↑↓←→ 精准控制方向 | 敌人会在迷宫巡逻躲避</div>
+        </div>
+
+        <div class="code-panel">
+            <h2 class="code-title">💻 可编辑代码后台</h2>
+            <textarea id="codeEditor" spellcheck="false">
+// 可修改参数
+const GAME_CONFIG = {
+    SPEED: 4,
+    PACMAN_COLOR: "#ffff00",
+    ENEMY_COLOR: "#ff0088",
+    ENEMY_NUM: 3,
+    POINT_COLOR: "#00ffcc"
+};
+
+class PacmanGame {
+    constructor() {
+        this.canvas = document.getElementById("gameCanvas");
+        this.ctx = this.canvas.getContext("2d");
+        this.size = 20;
+        this.pacman = { x: 260, y: 260, dir: null, nextDir: null };
+        this.enemies = [];
+        this.points = [];
+        this.score = 0;
+        this.level = 1;
+        this.maze = this.createMaze();
+        this.initGame();
+    }
+
+    createMaze() {
+        return [
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,0,1,1,1,0,1,1,1,1,0,0,1,0,0,1,1,1,1,0,1,1,1,0,1,
+            1,0,1,0,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,1,0,1,
+            1,0,1,0,1,1,1,1,0,1,0,0,1,0,0,1,0,1,1,1,1,0,1,0,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,
+            1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,1,
+            1,1,1,0,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,0,1,0,1,1,1,
+            1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,1,0,0,0,1,
+            1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,0,1,
+            1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,
+            1,1,1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,0,1,1,1,0,1,1,1,
+            1,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,
+            1,0,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,
+            1,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,1,
+            1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1,
+            1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,
+            1,1,1,0,1,1,0,0,1,1,1,1,1,1,1,0,1,0,0,1,1,0,1,1,1,
+            1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,
+            1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,0,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,1,1,1,1,1,0,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        ];
+    }
+
+    initGame() {
+        this.points = [];
+        this.enemies = [];
+        this.score = 0;
+        this.generatePoints();
+        this.generateEnemies();
+        this.updateUI();
+        this.gameLoop();
+    }
+
+    generatePoints() {
+        for (let i = 0; i < this.maze.length; i++) {
+            if (this.maze[i] === 0) {
+                let x = (i % 25) * 20 + 10;
+                let y = Math.floor(i / 25) * 20 + 10;
+                this.points.push({ x, y });
+            }
+        }
+    }
+
+    generateEnemies() {
+        const starts = [
+            { x: 100, y: 100 },
+            { x: 400, y: 100 },
+            { x: 100, y: 400 }
+        ];
+        for (let i = 0; i < GAME_CONFIG.ENEMY_NUM; i++) {
+            this.enemies.push({
+                x: starts[i].x,
+                y: starts[i].y,
+                dir: Math.floor(Math.random() * 4),
+                speed: 2.2
+            });
+        }
+    }
+
+    setControls() {
+        document.addEventListener("keydown", (e) => {
+            switch (e.key) {
+                case "ArrowUp": this.pacman.nextDir = 0; break;
+                case "ArrowRight": this.pacman.nextDir = 1; break;
+                case "ArrowDown": this.pacman.nextDir = 2; break;
+                case "ArrowLeft": this.pacman.nextDir = 3; break;
+            }
+        });
+    }
+
+    isWall(x, y) {
+        let gx = Math.floor(x / 20);
+        let gy = Math.floor(y / 20);
+        if (gx < 0 || gy < 0 || gx >= 25 || gy >= 25) return true;
+        return this.maze[gy * 25 + gx] === 1;
+    }
+
+    movePacman() {
+        const speed = GAME_CONFIG.SPEED;
+        const p = this.pacman;
+
+        if (p.nextDir !== null) {
+            let nx = p.x, ny = p.y;
+            switch (p.nextDir) {
+                case 0: ny -= speed; break;
+                case 1: nx += speed; break;
+                case 2: ny += speed; break;
+                case 3: nx -= speed; break;
+            }
+            if (!this.isWall(nx, ny)) {
+                p.dir = p.nextDir;
+                p.nextDir = null;
+            }
+        }
+
+        if (p.dir === null) return;
+
+        let nx = p.x, ny = p.y;
+        switch (p.dir) {
+            case 0: ny -= speed; break;
+            case 1: nx += speed; break;
+            case 2: ny += speed; break;
+            case 3: nx -= speed; break;
+        }
+
+        if (!this.isWall(nx, ny)) {
+            p.x = nx;
+            p.y = ny;
+        }
+    }
+
+    // ✅ 全新修复：敌人稳定巡逻逻辑（无BUG版）
+    moveEnemies() {
+        this.enemies.forEach(enemy => {
+            let dirs = [0, 1, 2, 3];
+            let newDir = enemy.dir;
+            let moved = false;
+
+            // 优先直行，不行再左右转，最后后退
+            for (let i = 0; i < 4; i++) {
+                let d = dirs[(newDir + i) % 4];
+                let nx = enemy.x;
+                let ny = enemy.y;
+
+                switch (d) {
+                    case 0: ny -= enemy.speed; break;
+                    case 1: nx += enemy.speed; break;
+                    case 2: ny += enemy.speed; break;
+                    case 3: nx -= enemy.speed; break;
+                }
+
+                if (!this.isWall(nx, ny)) {
+                    enemy.x = nx;
+                    enemy.y = ny;
+                    enemy.dir = d;
+                    moved = true;
+                    break;
+                }
+            }
+
+            // 完全卡死才随机换方向
+            if (!moved) {
+                enemy.dir = Math.floor(Math.random() * 4);
+            }
+
+            // 碰撞检测
+            if (Math.hypot(this.pacman.x - enemy.x, this.pacman.y - enemy.y) < 18) {
+                this.playSound("die");
+                alert("游戏结束！得分：" + this.score);
+                this.initGame();
+            }
+        });
+    }
+
+    checkPoints() {
+        this.points.forEach((p, i) => {
+            if (Math.hypot(this.pacman.x - p.x, this.pacman.y - p.y) < 15) {
+                this.points.splice(i, 1);
+                this.score += 10;
+                this.playSound("point");
+                this.updateUI();
+            }
+        });
+        if (this.points.length === 0) this.nextLevel();
+    }
+
+    nextLevel() {
+        this.level++;
+        this.playSound("level");
+        alert("恭喜通关！进入第" + this.level + "关");
+        this.initGame();
+    }
+
+    playSound(type) {
+        const sounds = {
+            point: "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3",
+            die: "https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3",
+            level: "https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"
+        };
+        let audio = new Audio(sounds[type]);
+        audio.volume = 0.6;
+        audio.play().catch(() => { });
+    }
+
+    draw() {
+        this.ctx.clearRect(0, 0, 500, 500);
+
+        this.ctx.fillStyle = "#2a2a50";
+        for (let i = 0; i < this.maze.length; i++) {
+            if (this.maze[i] === 1) {
+                let x = (i % 25) * 20;
+                let y = Math.floor(i / 25) * 20;
+                this.ctx.fillRect(x, y, 20, 20);
+            }
+        }
+
+        this.ctx.fillStyle = GAME_CONFIG.POINT_COLOR;
+        this.points.forEach(p => {
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+
+        this.ctx.fillStyle = GAME_CONFIG.ENEMY_COLOR;
+        this.enemies.forEach(e => {
+            this.ctx.beginPath();
+            this.ctx.arc(e.x, e.y, 11, 0, Math.PI * 2);
+            this.ctx.fill();
+        });
+
+        this.ctx.fillStyle = GAME_CONFIG.PACMAN_COLOR;
+        this.ctx.beginPath();
+        let angle = this.pacman.dir !== null ? this.pacman.dir * Math.PI / 2 : 0;
+        this.ctx.arc(this.pacman.x, this.pacman.y, 14, angle + 0.3, angle + Math.PI * 2 - 0.3);
+        this.ctx.lineTo(this.pacman.x, this.pacman.y);
+        this.ctx.fill();
+    }
+
+    updateUI() {
+        document.getElementById("score").textContent = this.score;
+        document.getElementById("level").textContent = this.level;
+    }
+
+    gameLoop() {
+        this.movePacman();
+        this.moveEnemies();
+        this.checkPoints();
+        this.draw();
+        requestAnimationFrame(() => this.gameLoop());
+    }
+}
+
+const game = new PacmanGame();
+game.setControls();
+            </textarea>
+            <button class="run-btn" onclick="runCustomCode()">▶️ 运行修改后的代码</button>
+        </div>
+    </div>
+
+    <script>
+        function runCustomCode() {
+            try {
+                const canvas = document.getElementById("gameCanvas");
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const code = document.getElementById("codeEditor").value;
+                eval(code);
+                
+                alert("✅ 代码运行成功！游戏已刷新");
+            } catch (error) {
+                alert("❌ 代码错误：" + error.message);
+            }
+        }
+
+        window.onload = () => {
+            runCustomCode();
+        };
+    </script>
+</body>
+</html>

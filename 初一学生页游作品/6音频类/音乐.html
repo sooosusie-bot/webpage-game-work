@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>周深音乐弹球</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft YaHei,sans-serif}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;transition:all 0.4s}
+
+  /* 风格1：梦幻星空 */
+  body.star{background:#101028;color:#c0b6f2}
+  .star .game{background:#1a1435;border:2px solid #a78bfa}
+  .star .paddle{background:#7c3aed}
+  .star .ball{background:#f472b6}
+  .star button{background:#3b2376;color:#e0d1ff;border:1px solid #a78bfa}
+
+  /* 风格2：清新温柔 */
+  body.light{background:#fdfaff;color:#4b5563}
+  .light .game{background:#fff;border:2px solid #d1d5db}
+  .light .paddle{background:#3b82f6}
+  .light .ball{background:#ec4899}
+  .light button{background:#f0f9ff;color:#0369a1}
+
+  /* 风格3：国风雅致 */
+  body.china{background:#1c1a17;color:#fef3c7}
+  .china .game{background:#292521;border:2px solid #d97706}
+  .china .paddle{background:#f59e0b}
+  .china .ball{background:#ef4444}
+  .china button{background:#443a2f;color:#fde68a;border:1px solid #d97706}
+
+  /* 界面 */
+  .controls{margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  button{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:bold}
+  .score{font-size:26px;margin-bottom:10px}
+  .game{width:360px;height:550px;border-radius:14px;position:relative;overflow:hidden}
+  .paddle{width:90px;height:12px;border-radius:6px;position:absolute;bottom:22px}
+  .ball{width:18px;height:18px;border-radius:50%;position:absolute}
+  .over{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:30px;display:none;text-align:center}
+  .tips{margin-top:8px;font-size:14px;color:#888}
+</style>
+</head>
+
+<body class="star">
+<div class="controls">
+  <button onclick="setTheme('star')">梦幻星空</button>
+  <button onclick="setTheme('light')">清新温柔</button>
+  <button onclick="setTheme('china')">国风雅致</button>
+  <button onclick="toggleMusic()">音乐开关</button>
+  <input type="range" id="vol" min="0" max="1" step="0.01" value="0.7">
+</div>
+
+<div class="score" id="score">分数：0</div>
+
+<div class="game" id="gameBox">
+  <div class="paddle" id="paddle"></div>
+  <div class="ball" id="ball"></div>
+  <div class="over" id="gameOver">游戏结束<br/>点击重新开始</div>
+</div>
+
+<div class="tips">🎵 正在播放：周深 - 大鱼</div>
+
+<script>
+// 游戏元素
+const paddle = document.getElementById('paddle');
+const ball = document.getElementById('ball');
+const scoreText = document.getElementById('score');
+const gameOver = document.getElementById('gameOver');
+const gameBox = document.getElementById('gameBox');
+const vol = document.getElementById('vol');
+
+// 游戏数据
+let paddleX = 135;
+let ballX = 170;
+let ballY = 100;
+let vx = 3;
+let vy = 3.2;
+let score = 0;
+let end = false;
+
+// ========== 周深歌曲 ==========
+const zhouShenAudio = new Audio('https://downloads.kxmp3.com/20250609/320kbps_96199.mp3');
+zhouShenAudio.loop = true;
+
+// 主题
+function setTheme(theme){
+  document.body.className = theme;
+}
+
+// 音乐开关
+function toggleMusic(){
+  if(zhouShenAudio.paused) zhouShenAudio.play();
+  else zhouShenAudio.pause();
+}
+
+// 音量
+vol.addEventListener('input',()=>{
+  zhouShenAudio.volume = vol.value;
+});
+
+// 鼠标控制
+gameBox.addEventListener('mousemove',(e)=>{
+  const rect = gameBox.getBoundingClientRect();
+  paddleX = e.clientX - rect.left - 45;
+  if(paddleX<0) paddleX=0;
+  if(paddleX>270) paddleX=270;
+  paddle.style.left = paddleX + 'px';
+});
+
+// 重置
+function reset(){
+  ballX=170; ballY=100; vx=3; vy=3.2;
+  score=0; scoreText.innerText='分数：0';
+  end=false; gameOver.style.display='none';
+}
+
+// 点击重开
+gameBox.addEventListener('click',()=>{
+  if(end) reset();
+});
+
+// 主循环
+function loop(){
+  if(end){gameOver.style.display='block';requestAnimationFrame(loop);return}
+
+  ballX += vx;
+  ballY += vy;
+
+  // 墙壁反弹
+  if(ballX < 0 || ballX > 342) vx *= -1;
+  if(ballY < 0) vy *= -1;
+
+  // 接球得分
+  if(ballY > 510 && ballY < 528 && ballX > paddleX && ballX < paddleX+90){
+    vy *= -1; score++; scoreText.innerText='分数：'+score;
+  }
+
+  // 掉落结束
+  if(ballY > 550) end = true;
+
+  ball.style.left = ballX + 'px';
+  ball.style.top = ballY + 'px';
+  requestAnimationFrame(loop);
+}
+
+// 启动
+setTheme('star');
+zhouShenAudio.volume = vol.value;
+zhouShenAudio.play();
+reset();
+loop();
+</script>
+</body>
+</html>

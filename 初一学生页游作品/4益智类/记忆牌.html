@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆翻牌小游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 32px;
+            color: #2c3e50;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 游戏容器 */
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            gap: 15px;
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        /* 卡片样式 */
+        .card {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            perspective: 1000px; /* 3D透视效果 */
+            cursor: pointer;
+        }
+
+        /* 卡片正反面共用样式 */
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden; /* 背面不可见 */
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            transition: transform 0.6s ease;
+        }
+
+        /* 正面：背面 */
+        .card-front {
+            background-color: #e74c3c;
+            transform: rotateY(0deg);
+        }
+
+        /* 反面：图案 */
+        .card-back {
+            background-color: #ecf0f1;
+            transform: rotateY(180deg);
+        }
+
+        /* 翻牌动画 */
+        .card.flip .card-front {
+            transform: rotateY(-180deg);
+        }
+
+        .card.flip .card-back {
+            transform: rotateY(0deg);
+        }
+
+        /* 悬停效果 */
+        .card:hover .card-front {
+            background-color: #c0392b;
+        }
+
+        /* 胜利弹窗 */
+        .win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .win-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            animation: pop 0.5s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .win-text {
+            font-size: 36px;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+
+        .restart-btn {
+            padding: 12px 25px;
+            font-size: 18px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .restart-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">🧠 记忆翻牌游戏</h1>
+    <div class="game-container" id="gameBox"></div>
+
+    <!-- 胜利弹窗 -->
+    <div class="win-modal" id="winModal">
+        <div class="win-content">
+            <h2 class="win-text">🎉 恭喜你，游戏胜利！</h2>
+            <button class="restart-btn" onclick="restartGame()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        // 卡片图案（表情，可自定义）
+        const icons = ['🎈', '🎨', '🎮', '🎲', '🎈', '🎨', '🎮', '🎲'];
+        const gameBox = document.getElementById('gameBox');
+        const winModal = document.getElementById('winModal');
+        
+        let flippedCards = []; // 已翻开的卡片
+        let matchedPairs = 0;  // 已配对数量
+
+        // 初始化游戏
+        function initGame() {
+            matchedPairs = 0;
+            flippedCards = [];
+            gameBox.innerHTML = '';
+            
+            // 打乱卡片顺序
+            const shuffledCards = [...icons].sort(() => Math.random() - 0.5);
+            
+            // 创建卡片
+            shuffledCards.forEach(icon => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.innerHTML = `
+                    <div class="card-front"></div>
+                    <div class="card-back">${icon}</div>
+                `;
+                card.addEventListener('click', flipCard);
+                gameBox.appendChild(card);
+            });
+        }
+
+        // 翻牌函数
+        function flipCard() {
+            // 防止重复点击同一张/已配对/已翻开两张
+            if (this.classList.contains('flip') || flippedCards.length === 2) return;
+            
+            this.classList.add('flip');
+            flippedCards.push(this);
+
+            // 翻开两张后判断是否配对
+            if (flippedCards.length === 2) {
+                setTimeout(checkMatch, 500);
+            }
+        }
+
+        // 检查配对
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const icon1 = card1.querySelector('.card-back').textContent;
+            const icon2 = card2.querySelector('.card-back').textContent;
+
+            if (icon1 === icon2) {
+                // 配对成功
+                card1.removeEventListener('click', flipCard);
+                card2.removeEventListener('click', flipCard);
+                matchedPairs++;
+                
+                // 全部配对成功
+                if (matchedPairs === icons.length / 2) {
+                    setTimeout(() => winModal.style.display = 'flex', 600);
+                }
+            } else {
+                // 配对失败，翻回去
+                card1.classList.remove('flip');
+                card2.classList.remove('flip');
+            }
+            
+            flippedCards = [];
+        }
+
+        // 重新开始
+        function restartGame() {
+            winModal.style.display = 'none';
+            initGame();
+        }
+
+        // 页面加载启动游戏
+        window.onload = initGame;
+    </script>
+</body>
+</html>

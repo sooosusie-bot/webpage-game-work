@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>波音747 编程实践课</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        /* 页面布局：游戏区 + 代码编辑区 */
+        .container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+            background: #e9e9e9;
+        }
+
+        /* 游戏区域 */
+        .game {
+            flex: 1;
+            background: linear-gradient(to bottom, #87CEEB 80%, #7cb342 80%);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 跑道 */
+        .runway {
+            position: absolute;
+            bottom: 120px;
+            width: 100%;
+            height: 50px;
+            background: #424242;
+            border-top: 5px solid #ffffff;
+            border-bottom: 5px solid #ffffff;
+        }
+
+        /* --------------------
+           波音747 专属样式
+        -------------------- */
+        #boeing747 {
+            position: absolute;
+            width: 220px;
+            height: 60px;
+            bottom: 145px;
+            left: 80px;
+            transition: all 2.2s ease;
+        }
+
+        /* 747 机身（双层客舱特征） */
+        .body {
+            position: absolute;
+            width: 180px;
+            height: 28px;
+            background: #ffffff;
+            border-radius: 14px;
+            top: 16px;
+            left: 20px;
+            border: 1px solid #ddd;
+        }
+
+        /* 747 标志性凸起机头 */
+        .head {
+            position: absolute;
+            width: 40px;
+            height: 28px;
+            background: #ffffff;
+            border-radius: 50%;
+            right: -15px;
+        }
+
+        /* 747 机翼 */
+        .wing {
+            position: absolute;
+            width: 60px;
+            height: 12px;
+            background: #d32f2f;
+            border-radius: 4px;
+        }
+        .wing-left { top: 40px; left: 30px; }
+        .wing-right { top: 4px; left: 30px; }
+
+        /* 747 尾翼 */
+        .tail {
+            position: absolute;
+            width: 30px;
+            height: 35px;
+            background: #d32f2f;
+            border-radius: 6px;
+            left: 0;
+            top: 12px;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .takeoff { background: #1976D2; }
+        .landing { background: #f57c00; }
+
+        /* 代码编辑区 */
+        .code-panel {
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .title {
+            text-align: center;
+            padding: 14px;
+            background: #263238;
+            color: white;
+            border-radius: 8px;
+        }
+        .tips {
+            background: #fff8e1;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+        }
+        textarea {
+            flex: 1;
+            padding: 18px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            font-family: monospace;
+            line-height: 1.6;
+        }
+        .run-code {
+            padding: 14px;
+            background: #388E3C;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 左侧：波音747 游戏区 -->
+        <div class="game">
+            <div class="runway"></div>
+
+            <!-- 波音747 飞机 -->
+            <div id="boeing747">
+                <div class="body"><div class="head"></div></div>
+                <div class="wing wing-left"></div>
+                <div class="wing wing-right"></div>
+                <div class="tail"></div>
+            </div>
+
+            <div class="controls">
+                <button class="takeoff" onclick="fly()">起飞 🛫</button>
+                <button class="landing" onclick="land()">降落 🛬</button>
+            </div>
+        </div>
+
+        <!-- 右侧：可编辑代码后台 -->
+        <div class="code-panel">
+            <h2 class="title">✍️ 波音747 代码编辑器</h2>
+            <div class="tips">
+                学生可修改：<br>
+                ✈️ 飞行高度、速度、左右位置、飞机颜色<br>
+                修改完成 → 点击【运行代码】→ 立即生效
+            </div>
+
+            <textarea id="codeEditor">
+// 波音747 起飞代码
+function fly() {
+    let plane = document.getElementById("boeing747");
+    plane.style.left = "100%";        // 飞到右侧
+    plane.style.bottom = "550px";     // 飞行高度
+    plane.style.transition = "all 2.2s"; // 飞行速度
+}
+
+// 波音747 降落代码
+function land() {
+    let plane = document.getElementById("boeing747");
+    plane.style.left = "80px";        // 回到起点
+    plane.style.bottom = "145px";     // 降落跑道
+    plane.style.transition = "all 2.2s";
+}
+            </textarea>
+
+            <button class="run-code" onclick="runMyCode()">▶️ 运行代码</button>
+        </div>
+    </div>
+
+    <script>
+        // 默认起飞函数
+        function fly() {
+            let p = document.getElementById("boeing747");
+            p.style.left = "100%";
+            p.style.bottom = "550px";
+            p.style.transition = "all 2.2s";
+        }
+
+        // 默认降落函数
+        function land() {
+            let p = document.getElementById("boeing747");
+            p.style.left = "80px";
+            p.style.bottom = "145px";
+            p.style.transition = "all 2.2s";
+        }
+
+        // 执行编辑器代码
+        function runMyCode() {
+            try {
+                eval(document.getElementById("codeEditor").value);
+                alert("✅ 代码运行成功！测试飞机起降");
+            } catch (err) {
+                alert("❌ 代码错误：" + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

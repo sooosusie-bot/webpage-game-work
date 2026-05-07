@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重返未来1999 | 个人主页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Times New Roman', serif;
+        }
+
+        body {
+            background-color: #1a1612;
+            background-image: url('https://img.pximg.com/photo/20240414/16/386634069_20240414160425_68284.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            color: #e0d8c8;
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        .overlay {
+            background: rgba(26, 22, 18, 0.85);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 1px solid #9a8465;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            color: #d4b888;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(212, 184, 136, 0.5);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: #b8a88f;
+            font-style: italic;
+        }
+
+        /* 个人简介 */
+        .profile {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 3px solid #9a8465;
+            object-fit: cover;
+            box-shadow: 0 0 20px rgba(212, 184, 136, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .profile-desc {
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        /* 分割线 */
+        .divider {
+            text-align: center;
+            margin: 35px 0;
+            color: #9a8465;
+            font-size: 1.5rem;
+        }
+
+        /* 事件背景 */
+        .story {
+            background: rgba(34, 28, 22, 0.6);
+            border: 1px solid #9a8465;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 50px;
+        }
+
+        .story h2 {
+            text-align: center;
+            color: #d4b888;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .story p {
+            margin-bottom: 15px;
+            font-size: 1.05rem;
+            text-align: justify;
+        }
+
+        /* 角色展示 */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: rgba(34, 28, 22, 0.7);
+            border: 1px solid #9a8465;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(212, 184, 136, 0.2);
+        }
+
+        .card img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+        }
+
+        .card-title {
+            padding: 15px;
+            text-align: center;
+            color: #d4b888;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        /* 底部 */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid #9a8465;
+            color: #8a7a62;
+            font-style: italic;
+        }
+
+        /* 移动端 */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            .avatar {
+                width: 140px;
+                height: 140px;
+            }
+            .card img {
+                height: 280px;
+            }
+            .story {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay">
+        <div class="container">
+
+            <!-- 头部 -->
+            <header>
+                <h1>REVERSE: 1999</h1>
+                <p>时间的洪流 神秘的回响</p>
+            </header>
+
+            <!-- 个人简介 -->
+            <section class="profile">
+                <img src="https://img.pximg.com/photo/20240520/14/401234069_20240520141233_12345.jpg" alt="司辰" class="avatar">
+                <div class="profile-desc">
+                    <p>司辰，于暴雨之中苏醒，执掌时间与神秘的力量。</p>
+                    <p>追寻遗失的历史，见证1999年的终末与重生。</p>
+                </div>
+            </section>
+
+            <div class="divider">✦</div>
+
+            <!-- 事件背景（新增） -->
+            <section class="story">
+                <h2>事件背景 · STORY</h2>
+                <p>1999年最后一天，一场名为「暴雨」的奇异现象席卷世界，历史开始不断倒流，人类文明被不断吞噬、遗忘。</p>
+                <p>只有极少数「神秘学家」能够在暴雨中保留记忆，他们拥有超越常理的力量，也成为了时代变迁中唯一的见证者。</p>
+                <p>你作为「司辰」，乘坐时空列车「圣洛夫基金会」穿梭于各个时代，寻找失散的同伴，阻止世界被彻底重置，揭开藏在时间尽头的真相。</p>
+                <p>每一段被遗忘的历史，每一位消失的角色，都将由你重新拾起。</p>
+            </section>
+
+            <div class="divider">✧</div>
+
+            <!-- 角色展示（扩充到6人） -->
+            <section class="gallery">
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152211_67890.jpg" alt="维尔汀">
+                    <div class="card-title">维尔汀 · Vertin</div>
+                </div>
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152345_13579.jpg" alt="十四行诗">
+                    <div class="card-title">十四行诗 · Sonetto</div>
+                </div>
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152510_24680.jpg" alt="斯奈德">
+                    <div class="card-title">斯奈德 · Schneider</div>
+                </div>
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152620_35791.jpg" alt="玛蒂尔达">
+                    <div class="card-title">玛蒂尔达 · Matilda</div>
+                </div>
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152730_46802.jpg" alt="红弩箭">
+                    <div class="card-title">红弩箭 · Lilya</div>
+                </div>
+                <div class="card">
+                    <img src="https://img.pximg.com/photo/20240520/15/401234069_20240520152840_57913.jpg" alt="兔毛手袋">
+                    <div class="card-title">兔毛手袋 · Druvis III</div>
+                </div>
+            </section>
+
+            <div class="divider">✦</div>
+
+            <!-- 底部 -->
+            <footer>
+                <p>时间从未流逝 我们只是重返其中</p>
+                <p>Reverse: 1999 · Personal Page</p>
+            </footer>
+
+        </div>
+    </div>
+</body>
+</html>

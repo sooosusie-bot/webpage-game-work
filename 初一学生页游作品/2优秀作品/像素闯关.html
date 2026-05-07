@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>多关卡像素闯关</title>
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;}
+        body{
+            background:#222;
+            color:#fff;
+            text-align:center;
+            font-family:微软雅黑;
+            padding:15px;
+        }
+        canvas{
+            border:3px solid #fff;
+            background:#71c5cf;
+            image-rendering:pixelated;
+        }
+        .info{margin:8px 0;font-size:18px;}
+        .tip{color:#aaa;font-size:14px;margin-top:5px;}
+    </style>
+</head>
+<body>
+    <h2>像素闯关 - 多关卡版</h2>
+    <div class="info">分数：<span id="score">0</span> &nbsp; 关卡：<span id="lv">1</span></div>
+    <canvas id="game" width="850" height="420"></canvas>
+    <div class="tip">← → 移动 | ↑ 跳跃 | 避开红色怪物 | 踩刺会死 | 绿色旗子过关</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let score = 0;
+let nowLv = 1;
+const maxLv = 5;
+
+// 玩家
+const p = {
+    x:30,y:300,w:28,h:28,
+    vx:0,vy:0,speed:4.5,
+    jumpPower:-14,gravity:0.6,
+    ground:false
+};
+
+const keys = {left:false,right:false,up:false};
+
+// 关卡数据 5关
+const levels = [
+    // 第1关
+    {
+        plat:[
+            {x:0,y:390,w:850,h:30},
+            {x:120,y:340,w:90,h:18},
+            {x:280,y:290,w:90,h:18},
+            {x:450,y:330,w:90,h:18},
+            {x:620,y:270,w:100,h:18}
+        ],
+        coin:[
+            {x:150,y:310},{x:310,y:260},{x:480,y:300},{x:660,y:240}
+        ],
+        enemy:[],
+        spike:[],
+        goal:{x:780,y:345,w:35,h:45}
+    },
+    // 第2关
+    {
+        plat:[
+            {x:0,y:390,w:350,h:30},
+            {x:420,y:390,w:430,h:30},
+            {x:180,y:320,w:80,h:18},
+            {x:360,y:260,w:80,h:18},
+            {x:550,y:300,w:80,h:18}
+        ],
+        coin:[{x:200,y:290},{x:380,y:230},{x:580,y:270}],
+        enemy:[{x:450,y:362,w:28,h:28,dir:1,speed:1.5}],
+        spike:[{x:360,y:375,w:50,h:15}],
+        goal:{x:790,y:345,w:35,h:45}
+    },
+    // 第3关
+    {
+        plat:[
+            {x:0,y:390,w:250,h:30},
+            {x:320,y:350,w:70,h:18},
+            {x:460,y:300,w:70,h:18},
+            {x:600,y:250,w:70,h:18},
+            {x:720,y:390,w:130,h:30}
+        ],
+        coin:[{x:335,y:320},{x:475,y:270},{x:615,y:220}],
+        enemy:[
+            {x:50,y:362,w:28,h:28,dir:1,speed:2},
+            {x:730,y:362,w:28,h:28,dir:-1,speed:2}
+        ],
+        spike:[{x:260,y:375,w:50,h:15}],
+        goal:{x:800,y:345,w:35,h:45}
+    },
+    // 第4关
+    {
+        plat:[
+            {x:0,y:390,w:180,h:30},
+            {x:230,y:330,w:60,h:18},
+            {x:350,y:270,w:60,h:18},
+            {x:470,y:210,w:60,h:18},
+            {x:590,y:270,w:60,h:18},
+            {x:710,y:330,w:140,h:18}
+        ],
+        coin:[{x:245,y:300},{x:365,y:240},{x:485,y:180},{x:605,y:240}],
+        enemy:[{x:720,y:302,w:28,h:28,dir:1,speed:2.2}],
+        spike:[{x:190,y:375,w:35,h:15},{x:650,y:375,w:35,h:15}],
+        goal:{x:795,y:285,w:35,h:45}
+    },
+    // 第5关 终极关卡
+    {
+        plat:[
+            {x:0,y:390,w:120,h:30},
+            {x:160,y:340,w:50,h:18},
+            {x:270,y:290,w:50,h:18},
+            {x:380,y:230,w:50,h:18},
+            {x:490,y:280,w:50,h:18},
+            {x:600,y:340,w:50,h:18},
+            {x:720,y:390,w:130,h:30}
+        ],
+        coin:[{x:170,y:310},{x:280,y:260},{x:390,y:200},{x:500,y:250},{x:610,y:310}],
+        enemy:[
+            {x:20,y:362,w:28,h:28,dir:1,speed:2.5},
+            {x:500,y:252,w:28,h:28,dir:-1,speed:2.5}
+        ],
+        spike:[{x:130,y:375,w:25,h:15},{x:320,y:375,w:25,h:15},{x:550,y:375,w:25,h:15}],
+        goal:{x:805,y:345,w:35,h:45}
+    }
+];
+
+let plat=[],coin=[],enemy=[],spike=[],goal={};
+
+// 加载关卡
+function loadLv(lv){
+    let d = levels[lv-1];
+    plat = d.plat;
+    coin = d.coin.map(c=>({...c,w:18,h:18,ok:false}));
+    enemy = d.enemy.map(e=>({...e}));
+    spike = d.spike;
+    goal = d.goal;
+    // 重置玩家位置
+    p.x=30;p.y=300;p.vx=0;p.vy=0;
+    document.getElementById("lv").innerText = lv;
+}
+
+// 碰撞
+function hit(a,b){
+    return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+}
+
+// 死亡重置
+function die(){
+    loadLv(nowLv);
+}
+
+// 键盘
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft") keys.left=true;
+    if(e.key==="ArrowRight") keys.right=true;
+    if(e.key==="ArrowUp"&&p.ground) p.vy = p.jumpPower;
+});
+document.addEventListener("keyup",e=>{
+    if(e.key==="ArrowLeft") keys.left=false;
+    if(e.key==="ArrowRight") keys.right=false;
+});
+
+// 游戏主循环
+function loop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    p.ground = false;
+
+    // 左右移动
+    if(keys.left) p.vx = -p.speed;
+    else if(keys.right) p.vx = p.speed;
+    else p.vx *= 0.8;
+
+    // 重力
+    p.vy += p.gravity;
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // 边界
+    if(p.x<0) p.x=0;
+    if(p.x+p.w>canvas.width) p.x = canvas.width-p.w;
+
+    // 绘制平台+碰撞
+    plat.forEach(t=>{
+        ctx.fillStyle="#444";
+        ctx.fillRect(t.x,t.y,t.w,t.h);
+        if(hit(p,t) && p.vy>=0){
+            p.y = t.y - p.h;
+            p.vy = 0;
+            p.ground = true;
+        }
+    });
+
+    // 金币
+    coin.forEach(c=>{
+        if(!c.ok){
+            ctx.fillStyle="#ffd300";
+            ctx.fillRect(c.x,c.y,c.w,c.h);
+            if(hit(p,c)){
+                c.ok=true;
+                score+=15;
+                document.getElementById("score").innerText=score;
+            }
+        }
+    });
+
+    // 地刺
+    spike.forEach(s=>{
+        ctx.fillStyle="#992222";
+        ctx.fillRect(s.x,s.y,s.w,s.h);
+        if(hit(p,s)) die();
+    });
+
+    // 怪物移动+碰撞
+    enemy.forEach(e=>{
+        e.x += e.dir * e.speed;
+        // 简单巡逻
+        if(e.x<10||e.x>canvas.width-40) e.dir*=-1;
+        ctx.fillStyle="#e53935";
+        ctx.fillRect(e.x,e.y,e.w,e.h);
+        if(hit(p,e)) die();
+    });
+
+    // 终点旗子
+    ctx.fillStyle="#2ecc71";
+    ctx.fillRect(goal.x,goal.y,goal.w,goal.h);
+
+    // 过关检测
+    if(hit(p,goal)){
+        nowLv++;
+        if(nowLv>maxLv){
+            alert("恭喜！通关全部5关🎉\n总分："+score);
+            nowLv=1;score=0;
+        }
+        loadLv(nowLv);
+    }
+
+    // 绘制玩家
+    ctx.fillStyle="#ff6b6b";
+    ctx.fillRect(p.x,p.y,p.w,p.h);
+
+    requestAnimationFrame(loop);
+}
+
+// 启动
+loadLv(1);
+loop();
+</script>
+</body>
+</html>

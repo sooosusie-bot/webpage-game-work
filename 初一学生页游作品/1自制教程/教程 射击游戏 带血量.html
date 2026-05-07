@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>射击游戏-带伤害碰撞</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        .game-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: #1a1a1a;
+        }
+        .code-panel {
+            width: 40%;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-right: 2px solid #333;
+        }
+        .code-panel h3 {
+            color: #fff;
+            text-align: center;
+        }
+        textarea {
+            flex: 1;
+            background: #2d2d2d;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+        #runBtn {
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #runBtn:hover {
+            background: #0056b3;
+        }
+        .game-view {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap:10px;
+        }
+        #gameCanvas {
+            border: 2px solid #fff;
+            background: #000;
+        }
+        .info{
+            color:#fff;
+            font-size:18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="code-panel">
+            <h3>可修改代码 - 一键运行</h3>
+<textarea id="codeEditor">
+// 射击游戏 【带碰撞+伤害+血量+击杀】
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const hpText = document.getElementById('hpText');
+
+canvas.width = 600;
+canvas.height = 500;
+
+// 玩家
+let player = {
+    x: canvas.width / 2,
+    y: canvas.height - 50,
+    width: 40,
+    height: 40,
+    color: '#00ff00',
+    speed: 8,
+    hp: 5          // 玩家血量
+};
+
+let bullets = [];
+let enemies = [];
+
+// 碰撞检测函数
+function isHit(a, b) {
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
+}
+
+// 鼠标控制
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    player.x = e.clientX - rect.left - player.width / 2;
+    if(player.x < 0) player.x = 0;
+    if(player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+});
+
+// 点击射击
+canvas.addEventListener('click', () => {
+    bullets.push({
+        x: player.x + player.width / 2 - 2,
+        y: player.y,
+        width: 4,
+        height: 15,
+        color: '#ffff00',
+        speed: 10
+    });
+});
+
+// 生成敌人
+function spawnEnemy() {
+    enemies.push({
+        x: Math.random() * (canvas.width - 30),
+        y: 0,
+        width: 30,
+        height: 30,
+        color: '#ff3333',
+        speed: 3,
+        hp: 1     // 敌人血量
+    });
+}
+setInterval(spawnEnemy, 900);
+
+// 游戏主循环
+function gameLoop() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 血量显示
+    hpText.innerText = "玩家血量：" + player.hp;
+
+    // 游戏结束判断
+    if(player.hp <= 0){
+        ctx.fillStyle = "#fff";
+        ctx.font = "40px Arial";
+        ctx.fillText("游戏结束", canvas.width/2 - 100, canvas.height/2);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    // 绘制玩家
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // 子弹更新+碰撞敌人
+    for(let i = bullets.length - 1; i >= 0; i--){
+        let b = bullets[i];
+        b.y -= b.speed;
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+
+        // 子弹碰到敌人
+        for(let j = enemies.length - 1; j >= 0; j--){
+            let e = enemies[j];
+            if(isHit(b, e)){
+                e.hp -= 1;
+                bullets.splice(i, 1);
+                if(e.hp <= 0){
+                    enemies.splice(j, 1);
+                }
+                break;
+            }
+        }
+        if(b.y < 0) bullets.splice(i,1);
+    }
+
+    // 敌人更新+碰撞玩家
+    for(let i = enemies.length - 1; i >= 0; i--){
+        let e = enemies[i];
+        e.y += e.speed;
+        ctx.fillStyle = e.color;
+        ctx.fillRect(e.x, e.y, e.width, e.height);
+
+        // 敌人撞到玩家 扣血
+        if(isHit(e, player)){
+            player.hp -= 1;
+            enemies.splice(i, 1);
+        }
+        if(e.y > canvas.height) enemies.splice(i,1);
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</textarea>
+            <button id="runBtn">运行游戏</button>
+        </div>
+
+        <div class="game-view">
+            <div class="info" id="hpText">玩家血量：5</div>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let bullets = [];
+        let enemies = [];
+        window.onload = runGameCode;
+
+        function runGameCode() {
+            const code = document.getElementById('codeEditor').value;
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            bullets = [];
+            enemies = [];
+            try {
+                eval(code);
+            } catch (err) {
+                alert("代码错误：" + err.message);
+            }
+        }
+        document.getElementById('runBtn').addEventListener('click', runGameCode);
+    </script>
+</body>
+</html>

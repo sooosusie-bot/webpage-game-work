@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈基米卡片对战</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 哈基米定制样式 */
+        @keyframes float {
+            0%,100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes cardPlay {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes damagePop {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+        @keyframes healPop {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+        @keyframes skillGlow {
+            0%,100% { box-shadow: 0 0 10px #fff; }
+            50% { box-shadow: 0 0 25px #ff9; }
+        }
+        @keyframes skillCast {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.4); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .card-float { animation: float 3s ease-in-out infinite; }
+        .card-play { animation: cardPlay 0.6s forwards; }
+        .damage-text { animation: damagePop 1s forwards; color: #ff4444; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 24px; }
+        .heal-text { animation: healPop 1s forwards; color: #4CAF50; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 24px; }
+        .skill-animation { animation: skillCast 0.8s forwards; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; }
+        .btn-skill { animation: skillGlow 2s infinite; transition: all 0.3s; }
+        .btn-skill:disabled { animation: none; opacity: 0.5; }
+        
+        /* 角色浮动动画 */
+        .char-float { animation: float 4s ease-in-out infinite; }
+        
+        /* 二次元头像样式 */
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        /* 拖拽样式 */
+        .draggable-card {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .dragging {
+            opacity: 0.5;
+            transform: scale(1.1);
+            cursor: grabbing;
+        }
+        .drop-zone {
+            transition: all 0.3s;
+        }
+        .drop-zone.highlight {
+            box-shadow: 0 0 20px #ffeb3b !important;
+        }
+        
+        /* 编辑器样式 */
+        #codeEditor {
+            resize: none;
+            font-family: 'Consolas', monospace;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-blue-100 to-purple-100 min-h-screen">
+    <div class="container mx-auto px-4 py-5">
+        <!-- 顶部标题 -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-bold text-fuchsia-600 drop-shadow-lg">
+                <i class="fas fa-cat"></i> 哈基米卡片对战 <i class="fas fa-paw"></i>
+            </h1>
+            <p class="text-lg text-gray-600 mt-2">初中生专属 · 拖拽出牌 · 多技能系统</p>
+        </div>
+
+        <!-- 主界面：游戏区 + 代码区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧游戏主界面 (占2/3宽度) -->
+            <div class="lg:col-span-2 bg-white/80 rounded-2xl shadow-xl p-6 backdrop-blur-sm">
+                <!-- 对战区域 → 二次元人物形象 -->
+                <div class="grid grid-cols-2 gap-8 mb-8">
+                    <!-- 玩家角色（二次元少女） -->
+                    <div class="text-center">
+                        <div id="playerDropZone" class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 shadow-lg border-4 border-blue-300 char-float drop-zone">
+                            <div class="w-28 h-28 mx-auto bg-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-md overflow-hidden">
+                                <img class="avatar-img" src="https://pic.ntimg.cn/file/20200617/14195137_160201977000_2.jpg" alt="二次元哈基米少女">
+                            </div>
+                            <h3 class="text-2xl font-bold text-blue-600 mt-3">🌸 小哈基米</h3>
+                            <p class="text-sm text-blue-500">你的角色</p>
+                            
+                            <div class="w-full h-5 bg-gray-200 rounded-full overflow-hidden mt-3">
+                                <div id="playerHealthBar" class="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                            <p id="playerHealth" class="mt-2 font-bold text-blue-700">生命值：30 / 30</p>
+                        </div>
+
+                        <!-- 玩家技能区 → 4个技能 -->
+                        <div class="grid grid-cols-2 gap-2 mt-3">
+                            <button id="skill1" class="bg-pink-500 text-white px-2 py-1 rounded-lg text-sm font-bold btn-skill">🌸 治愈之歌</button>
+                            <button id="skill2" class="bg-purple-500 text-white px-2 py-1 rounded-lg text-sm font-bold btn-skill">⚡ 萌猫闪电</button>
+                            <button id="skill3" class="bg-green-500 text-white px-2 py-1 rounded-lg text-sm font-bold btn-skill">🛡️ 守护光环</button>
+                            <button id="skill4" class="bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold btn-skill">🐾 必杀爪击</button>
+                        </div>
+                    </div>
+
+                    <!-- 电脑角色（二次元反派少女） -->
+                    <div class="text-center">
+                        <div id="enemyDropZone" class="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-5 shadow-lg border-4 border-red-300 char-float drop-zone">
+                            <div class="w-28 h-28 mx-auto bg-red-100 rounded-full flex items-center justify-center border-4 border-white shadow-md overflow-hidden">
+                                <img class="avatar-img" src="https://pic.ntimg.cn/file/20200309/9443512_144641867000_2.jpg" alt="二次元对手">
+                            </div>
+                            <h3 class="text-2xl font-bold text-red-600 mt-3">🖤 暗黑喵姬</h3>
+                            <p class="text-sm text-red-500">对手角色</p>
+                            
+                            <div class="w-full h-5 bg-gray-200 rounded-full overflow-hidden mt-3">
+                                <div id="enemyHealthBar" class="h-full bg-gradient-to-r from-red-400 to-red-600 transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                            <p id="enemyHealth" class="mt-2 font-bold text-red-700">生命值：30 / 30</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 战斗提示 -->
+                <div id="battleLog" class="bg-gray-100 rounded-xl p-4 h-24 overflow-y-auto mb-6 text-center font-medium text-gray-700">
+                    把卡牌拖动到角色身上使用！
+                </div>
+
+                <!-- 玩家卡牌区域 -->
+                <div>
+                    <h3 class="text-xl font-bold text-purple-600 mb-4 flex items-center">
+                        <i class="fas fa-layer-group mr-2"></i> 你的卡牌（拖动使用）
+                    </h3>
+                    <div id="playerCards" class="grid grid-cols-4 gap-3 mb-8">
+                        <!-- 卡牌会动态生成在这里 -->
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="text-center">
+                    <button id="restartBtn" class="bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg">
+                        <i class="fas fa-redo mr-2"></i>重新开始游戏
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧代码编辑器 (占1/3宽度) -->
+            <div class="bg-gray-900 rounded-2xl shadow-xl p-5 flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold text-green-400">
+                        <i class="fas fa-code mr-2"></i>代码编辑器
+                    </h2>
+                    <button id="runCodeBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold transition-all">
+                        运行修改后的代码
+                    </button>
+                </div>
+                <textarea id="codeEditor" class="flex-1 bg-gray-800 text-green-300 p-3 rounded-lg outline-none border-2 border-gray-700 text-sm"></textarea>
+                <p class="text-gray-400 text-xs mt-2">修改代码后点击运行，即可实时更新游戏！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== 游戏核心代码 =====================
+        // 初始数据
+        const gameData = {
+            playerHP: 30,
+            enemyHP: 30,
+            maxHP: 30,
+            isPlayerTurn: true,
+            skills: [
+                { id:1, name:"治愈之歌", type:"heal", value:12, cd:3, currentCd:0, color:"pink" },
+                { id:2, name:"萌猫闪电", type:"attack", value:10, cd:2, currentCd:0, color:"purple" },
+                { id:3, name:"守护光环", type:"defend", value:8, cd:4, currentCd:0, color:"green" },
+                { id:4, name:"必杀爪击", type:"attack", value:15, cd:5, currentCd:0, color:"red" }
+            ],
+            cards: [
+                // 攻击卡
+                { name: "哈基米爪击", type: "attack", value: 5, color: "red", icon: "fa-bolt" },
+                { name: "萌猫突袭", type: "attack", value: 8, color: "red", icon: "fa-bomb" },
+                { name: "闪电飞踢", type: "attack", value: 6, color: "red", icon: "fa-bolt" },
+                // 治疗卡
+                { name: "治愈喵喵", type: "heal", value: 7, color: "green", icon: "fa-heart" },
+                { name: "元气恢复", type: "heal", value: 5, color: "green", icon: "fa-heart-circle-plus" },
+                // 防御卡
+                { name: "软毛护盾", type: "defend", value: 4, color: "blue", icon: "fa-shield-halved" },
+                { name: "可爱屏障", type: "defend", value: 6, color: "blue", icon: "fa-shield-halved" }
+            ]
+        };
+
+        // DOM元素
+        const playerHealthEl = document.getElementById('playerHealth');
+        const enemyHealthEl = document.getElementById('enemyHealth');
+        const playerHealthBar = document.getElementById('playerHealthBar');
+        const enemyHealthBar = document.getElementById('enemyHealthBar');
+        const playerCardsEl = document.getElementById('playerCards');
+        const battleLogEl = document.getElementById('battleLog');
+        const restartBtn = document.getElementById('restartBtn');
+        const codeEditor = document.getElementById('codeEditor');
+        const runCodeBtn = document.getElementById('runCodeBtn');
+        const playerDropZone = document.getElementById('playerDropZone');
+        const enemyDropZone = document.getElementById('enemyDropZone');
+        const skillBtns = [document.getElementById('skill1'), document.getElementById('skill2'), document.getElementById('skill3'), document.getElementById('skill4')];
+
+        let draggedCard = null;
+
+        // 初始化游戏
+        function initGame() {
+            gameData.playerHP = gameData.maxHP;
+            gameData.enemyHP = gameData.maxHP;
+            gameData.isPlayerTurn = true;
+            gameData.skills.forEach(s => s.currentCd = 0);
+            updateUI();
+            renderCards();
+            updateAllSkillButtons();
+            addLog("游戏开始！拖动卡牌到角色身上使用~");
+        }
+
+        // 更新界面
+        function updateUI() {
+            playerHealthEl.textContent = `生命值：${gameData.playerHP} / ${gameData.maxHP}`;
+            enemyHealthEl.textContent = `生命值：${gameData.enemyHP} / ${gameData.maxHP}`;
+            playerHealthBar.style.width = `${(gameData.playerHP / gameData.maxHP) * 100}%`;
+            enemyHealthBar.style.width = `${(gameData.enemyHP / gameData.maxHP) * 100}%`;
+            
+            if(gameData.playerHP <= 0) { addLog("😢 你输了！"); disableAll(); }
+            if(gameData.enemyHP <= 0) { addLog("🎉 你赢了！"); disableAll(); }
+        }
+
+        // 渲染卡牌（拖拽版）
+        function renderCards() {
+            playerCardsEl.innerHTML = '';
+            const randomCards = [...gameData.cards].sort(() => Math.random() - 0.5).slice(0, 4);
+            
+            randomCards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                let cardColorClass = '';
+                if(card.type === 'attack') cardColorClass = 'bg-gradient-to-br from-red-200 to-red-400';
+                if(card.type === 'heal') cardColorClass = 'bg-gradient-to-br from-green-200 to-green-400';
+                if(card.type === 'defend') cardColorClass = 'bg-gradient-to-br from-blue-200 to-blue-400';
+
+                cardDiv.className = `${cardColorClass} rounded-xl shadow-lg p-3 text-center card-float draggable-card`;
+                cardDiv.innerHTML = `
+                    <i class="fas ${card.icon} text-xl mb-1 text-white"></i>
+                    <h4 class="font-bold text-gray-700 text-sm">${card.name}</h4>
+                    <p class="text-xs text-gray-600">${card.type === 'attack' ? '伤害'+card.value : card.type === 'heal' ? '治疗'+card.value : '护盾'+card.value}</p>
+                `;
+
+                // 拖拽事件
+                cardDiv.draggable = true;
+                cardDiv.dataset.cardType = card.type;
+                cardDiv.dataset.cardValue = card.value;
+                
+                cardDiv.addEventListener('dragstart', dragStart);
+                cardDiv.addEventListener('dragend', dragEnd);
+                playerCardsEl.appendChild(cardDiv);
+            });
+        }
+
+        // 拖拽开始
+        function dragStart(e) {
+            if(!gameData.isPlayerTurn) return;
+            draggedCard = this;
+            setTimeout(() => this.classList.add('dragging'), 0);
+            playerDropZone.classList.add('highlight');
+            enemyDropZone.classList.add('highlight');
+        }
+
+        // 拖拽结束
+        function dragEnd(e) {
+            setTimeout(() => this.classList.remove('dragging'), 0);
+            playerDropZone.classList.remove('highlight');
+            enemyDropZone.classList.remove('highlight');
+            draggedCard = null;
+        }
+
+        // 拖入区域
+        playerDropZone.addEventListener('dragover', (e) => e.preventDefault());
+        enemyDropZone.addEventListener('dragover', (e) => e.preventDefault());
+        
+        // 释放卡牌（出牌）
+        playerDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if(!draggedCard || !gameData.isPlayerTurn) return;
+            const type = draggedCard.dataset.cardType;
+            const value = parseInt(draggedCard.dataset.cardValue);
+            if(type === 'heal' || type === 'defend') useCard(type, value);
+        });
+
+        enemyDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if(!draggedCard || !gameData.isPlayerTurn) return;
+            const type = draggedCard.dataset.cardType;
+            const value = parseInt(draggedCard.dataset.cardValue);
+            if(type === 'attack') useCard(type, value);
+        });
+
+        // 使用卡牌
+        function useCard(type, value) {
+            draggedCard.classList.add('card-play');
+            
+            setTimeout(() => {
+                if(type === 'attack') {
+                    gameData.enemyHP -= value;
+                    addLog(`造成${value}点伤害！`);
+                    showPopup(window.innerWidth/2, window.innerHeight/2, `-${value}`, 'damage');
+                }
+                if(type === 'heal') {
+                    gameData.playerHP = Math.min(gameData.playerHP + value, gameData.maxHP);
+                    addLog(`恢复${value}点生命！`);
+                    showPopup(window.innerWidth/2, window.innerHeight/2, `+${value}`, 'heal');
+                }
+                if(type === 'defend') {
+                    addLog(`获得${value}点护盾！`);
+                }
+
+                updateUI();
+                gameData.isPlayerTurn = false;
+                reduceAllCd();
+
+                if(gameData.enemyHP > 0 && gameData.playerHP > 0) setTimeout(enemyTurn, 1200);
+            }, 300);
+        }
+
+        // =============== 多技能系统 ===============
+        skillBtns.forEach((btn, idx) => {
+            btn.addEventListener('click', () => useSkill(idx));
+        });
+
+        function useSkill(index) {
+            const skill = gameData.skills[index];
+            if(!gameData.isPlayerTurn || skill.currentCd > 0 || gameData.playerHP <=0 || gameData.enemyHP <=0) return;
+
+            const skillEffect = document.createElement('div');
+            skillEffect.className = 'skill-animation text-4xl text-white';
+            skillEffect.innerHTML = `${skill.name} ✨`;
+            document.body.appendChild(skillEffect);
+
+            if(skill.type === 'heal') {
+                gameData.playerHP = Math.min(gameData.playerHP + skill.value, gameData.maxHP);
+                addLog(`使用${skill.name}，恢复${skill.value}生命！`);
+                showPopup(window.innerWidth/2, window.innerHeight/2, `+${skill.value}`, 'heal');
+            }
+            if(skill.type === 'attack') {
+                gameData.enemyHP -= skill.value;
+                addLog(`使用${skill.name}，造成${skill.value}伤害！`);
+                showPopup(window.innerWidth/2, window.innerHeight/2, `-${skill.value}`, 'damage');
+            }
+            if(skill.type === 'defend') {
+                addLog(`使用${skill.name}，获得护盾！`);
+            }
+
+            skill.currentCd = skill.cd;
+            updateAllSkillButtons();
+            updateUI();
+            setTimeout(() => skillEffect.remove(), 800);
+            
+            gameData.isPlayerTurn = false;
+            reduceAllCd();
+            setTimeout(enemyTurn, 1000);
+        }
+
+        // 技能冷却
+        function reduceAllCd() {
+            gameData.skills.forEach(s => { if(s.currentCd > 0) s.currentCd--; });
+            updateAllSkillButtons();
+        }
+
+        function updateAllSkillButtons() {
+            gameData.skills.forEach((s, i) => {
+                skillBtns[i].disabled = s.currentCd > 0;
+                skillBtns[i].textContent = `${s.name} ${s.currentCd > 0 ? '('+s.currentCd+')' : ''}`;
+            });
+        }
+
+        // =============== 对手回合 ===============
+        function enemyTurn() {
+            const skills = [
+                "🖤 暗黑冲击波", "⚫ 暗影侵蚀", "💀 诅咒", "🔥 黑暗火焰"
+            ];
+            const dmg = Math.floor(Math.random()*6)+5;
+            
+            const skillEffect = document.createElement('div');
+            skillEffect.className = 'skill-animation text-4xl text-red-500';
+            skillEffect.innerHTML = skills[Math.floor(Math.random()*skills.length)];
+            document.body.appendChild(skillEffect);
+            
+            gameData.playerHP -= dmg;
+            addLog(`对手造成 ${dmg} 点伤害！`);
+            showPopup(window.innerWidth/2, window.innerHeight/2, `-${dmg}`, 'damage');
+            
+            setTimeout(() => skillEffect.remove(), 800);
+            updateUI();
+            gameData.isPlayerTurn = true;
+            renderCards();
+        }
+
+        // 特效文字
+        function showPopup(x, y, text, type) {
+            const popup = document.createElement('div');
+            popup.className = type === 'damage' ? 'damage-text' : 'heal-text';
+            popup.style.position = 'fixed';
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            popup.style.zIndex = '999';
+            popup.textContent = text;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+
+        function addLog(text) {
+            battleLogEl.innerHTML = text;
+        }
+
+        function disableAll() {
+            document.querySelectorAll('.draggable-card').forEach(c => c.style.pointerEvents = 'none');
+            skillBtns.forEach(b => b.disabled = true);
+        }
+
+        // 代码编辑器
+        function loadCodeToEditor() {
+            codeEditor.value = document.querySelector('script').textContent;
+        }
+        function runModifiedCode() {
+            try { eval(codeEditor.value); addLog("✅ 代码运行成功！"); }
+            catch (e) { addLog("❌ 错误："+e.message); }
+        }
+
+        // 绑定事件
+        restartBtn.addEventListener('click', initGame);
+        runCodeBtn.addEventListener('click', runModifiedCode);
+        window.onload = () => { initGame(); loadCodeToEditor(); };
+    </script>
+</body>
+</html>

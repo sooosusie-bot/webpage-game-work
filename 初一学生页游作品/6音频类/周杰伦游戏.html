@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <title>周杰伦音符接球</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      background:red;
+      color:#fff;
+      font-family:Arial;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding-top:20px;
+    }
+    #gameCanvas{
+      border:2px solid #444;
+      background:#000;
+    }
+    #info{
+      margin-bottom:10px;
+      font-size:18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">左右方向键移动板子 | 接住音符拼成周杰伦歌曲</div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+// ==================== 配置 ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+
+// 拍子速度（越小越快）
+const NOTE_SPEED = 3;
+const PADDLE_SPEED = 8;
+
+// 周杰伦歌曲旋律（简化音高 + 时长）
+// 格式: [音名, 时长]
+const zhouSong = [
+  ['C5',1],['D5',1],['E5',1],['G5',1],['E5',1],['D5',1],['C5',1], // 简单晴天片段
+  ['C5',1],['D5',1],['E5',1],['G5',1],['E5',1],['D5',1],['C5',1],
+  ['E5',1],['F5',1],['G5',2],
+  ['G5',1],['F5',1],['E5',1],['D5',2],
+  ['E5',1],['D5',1],['C5',2],
+];
+
+// 音名转频率
+const noteFreq = {
+  C4:261,D4:293,E4:329,F4:349,G4:392,A4:440,B4:493,
+  C5:523,D5:587,E5:659,F5:698,G5:783,A5:880,B5:987,
+};
+
+// ==================== 音频合成 ====================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playNote(note) {
+  if(!noteFreq[note]) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type='sine';
+  o.frequency.value = noteFreq[note];
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  g.gain.setValueAtTime(0.3,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.25);
+  o.stop(audioCtx.currentTime+0.3);
+}
+
+// ==================== 游戏对象 ====================
+// 板子
+const paddle = {
+  w:80, h:15, x:WIDTH/2-40, y:HEIGHT-40,
+};
+
+// 音符小球队列
+let notes = [];
+let songIndex = 0;
+let gameOver = false;
+let score = 0;
+
+// 生成一个音符
+function spawnNote() {
+  if(songIndex >= zhouSong.length) return;
+  const [note, dur] = zhouSong[songIndex];
+  notes.push({
+    note,
+    x: Math.random()*(WIDTH-20)+10,
+    y: -20,
+    r: 12,
+    speed: NOTE_SPEED,
+  });
+  songIndex++;
+}
+
+// 每过一段时间生成下一个音符
+setInterval(spawnNote, 700);
+
+// ==================== 控制 ====================
+const keys = {};
+document.addEventListener('keydown', e=>{
+  keys[e.key] = true;
+});
+document.addEventListener('keyup', e=>{
+  keys[e.key] = false;
+});
+
+function updatePaddle() {
+  if(keys['ArrowLeft'] && paddle.x>0) paddle.x -= PADDLE_SPEED;
+  if(keys['ArrowRight'] && paddle.x+paddle.w<WIDTH) paddle.x += PADDLE_SPEED;
+}
+
+// ==================== 碰撞检测 ====================
+function checkCollision(note) {
+  const px = paddle.x;
+  const py = paddle.y;
+  const pw = paddle.w;
+  const ph = paddle.h;
+  return (
+    note.x > px &&
+    note.x < px+pw &&
+    note.y+note.r > py &&
+    note.y+note.r < py+ph
+  );
+}
+
+// ==================== 绘制 ====================
+function draw() {
+  if(gameOver) return;
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+  // 画板子
+  ctx.fillStyle='#0ff';
+  ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+
+  // 更新音符
+  for(let i=notes.length-1; i>=0; i--){
+    const n = notes[i];
+    n.y += n.speed;
+
+    // 画音符小球
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle='#ff3';
+    ctx.fill();
+    ctx.strokeStyle='#fff';
+    ctx.stroke();
+
+    // 接住
+    if(checkCollision(n)){
+      playNote(n.note);
+      notes.splice(i,1);
+      score++;
+    }
+
+    // 漏掉
+    if(n.y > HEIGHT){
+      notes.splice(i,1);
+    }
+  }
+
+  // 分数
+  ctx.fillStyle='#fff';
+  ctx.font='18px Arial';
+  ctx.fillText(`得分: ${score} / ${zhouSong.length}`, 10, 30);
+
+  updatePaddle();
+  requestAnimationFrame(draw);
+}
+
+// 开始
+draw();
+</script>
+</body>
+</html>

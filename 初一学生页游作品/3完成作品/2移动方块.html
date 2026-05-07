@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>跑酷游戏</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    background:#111;
+    overflow:hidden;
+  }
+  #game{
+    width:100vw;
+    height:56.25vw;
+    max-height:100vh;
+    max-width:177.78vh;
+    background:#222;
+    border:2px solid #444;
+    position:relative;
+    overflow:hidden;
+  }
+  #player{
+    width:40px;
+    height:60px;
+    background:#58f;
+    position:absolute;
+    bottom:100px;
+    left:150px;
+    border-radius:6px;
+    transition: background 0.1s;
+  }
+  #player.boost{
+    background:#ff3;
+  }
+  .obstacle{
+    position:absolute;
+    background:#6c3;
+    bottom:100px;
+  }
+  #score{
+    position:absolute;
+    top:20px;
+    left:20px;
+    color:#fff;
+    font-size:24px;
+    font-family:Arial;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="score">0</div>
+  <div id="player"></div>
+</div>
+
+<script>
+const game = document.getElementById('game');
+const player = document.getElementById('player');
+const scoreText = document.getElementById('score');
+
+let px = 150, py = 0;
+let vx = 0, vy = 0;
+const gravity = 0.8;
+const jumpPower = -15;
+const speed = 6;
+const boostSpeed = 10;
+const groundY = 100;
+let score = 0;
+let gameOver = false;
+
+let jumpCount = 0;
+const maxJumps = 2;
+
+const keys = {};
+document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+});
+document.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+function spawnObstacle() {
+  if (gameOver) return;
+  const obs = document.createElement('div');
+  obs.className = 'obstacle';
+  obs.style.width = 30 + Math.random() * 30 + 'px';
+  obs.style.height = 50 + Math.random() * 40 + 'px';
+  obs.style.right = '0px';
+  game.appendChild(obs);
+  setTimeout(spawnObstacle, 800 + Math.random() * 1000);
+}
+spawnObstacle();
+
+function loop() {
+  if (gameOver) {
+    alert('游戏结束！得分：' + score);
+    window.location.reload();
+    return;
+  }
+
+  let currentSpeed = speed;
+  if (keys['shift']) {
+    currentSpeed = boostSpeed;
+    player.classList.add('boost');
+  } else {
+    player.classList.remove('boost');
+  }
+
+  vx = 0;
+  if (keys['a']) vx = -currentSpeed;
+  if (keys['d']) vx = currentSpeed;
+
+  if (keys['w'] && jumpCount < maxJumps) {
+    vy = jumpPower;
+    jumpCount++;
+  }
+
+  vy += gravity;
+  py += vy;
+  if (py >= 0) {
+    py = 0;
+    jumpCount = 0;
+    vy = 0;
+  }
+
+  px += vx;
+
+  if (px < 0) px = 0;
+  if (px > game.clientWidth - player.offsetWidth)
+    px = game.clientWidth - player.offsetWidth;
+
+  player.style.left = px + 'px';
+  player.style.bottom = groundY + py + 'px';
+
+  document.querySelectorAll('.obstacle').forEach(obs => {
+    let x = parseFloat(obs.style.right);
+    x += 4;
+    obs.style.right = x + 'px';
+
+    if (x > px + player.offsetWidth && !obs.scored) {
+      score++;
+      scoreText.textContent = score;
+      obs.scored = true;
+    }
+
+    const pRect = player.getBoundingClientRect();
+    const oRect = obs.getBoundingClientRect();
+    if (
+      pRect.left < oRect.right &&
+      pRect.right > oRect.left &&
+      pRect.top < oRect.bottom &&
+      pRect.bottom > oRect.top
+    ) {
+      gameOver = true;
+    }
+
+    if (x > game.clientWidth) obs.remove();
+  });
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

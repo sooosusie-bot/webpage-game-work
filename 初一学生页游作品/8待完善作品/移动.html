@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>和平精英 - 极简版</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#2d4c2d;
+    overflow:hidden;
+    color:white;
+    font-family:Microsoft YaHei,sans-serif;
+  }
+  #game{
+    width:100vw;
+    height:100vh;
+    position:relative;
+    background-image:
+      radial-gradient(circle at 20% 30%,#3a5a3a 0%,transparent 25%),
+      radial-gradient(circle at 70% 60%,#3a5a3a 0%,transparent 25%);
+  }
+  #player{
+    width:36px;
+    height:36px;
+    background:#4fc3f7;
+    border-radius:50%;
+    position:absolute;
+    transform:translate(-50%,-50%);
+    border:3px solid #1a237e;
+  }
+  #gun{
+    position:absolute;
+    width:32px;
+    height:5px;
+    background:#424242;
+    transform-origin:left center;
+    border-radius:2px;
+  }
+  #ui{
+    position:fixed;
+    top:10px;
+    left:10px;
+    z-index:999;
+  }
+  #hp-box{
+    width:220px;
+    height:18px;
+    background:#222;
+    border:2px solid #fff;
+    margin-bottom:6px;
+  }
+  #hp-bar{
+    height:100%;
+    background:#69f0ae;
+    width:100%;
+    transition:width 0.2s;
+  }
+  #score{
+    font-size:16px;
+    text-shadow:1px 1px 2px #000;
+  }
+  .bullet{
+    width:6px;
+    height:6px;
+    background:#fff;
+    border-radius:50%;
+    position:absolute;
+  }
+  .enemy{
+    width:34px;
+    height:34px;
+    background:#e53935;
+    border-radius:50%;
+    position:absolute;
+    border:3px solid #b71c1c;
+  }
+  #gameOver{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:46px;
+    color:#e53935;
+    text-shadow:2px 2px 4px #000;
+    display:none;
+  }
+</style>
+</head>
+
+<body>
+<div id="ui">
+  <div id="hp-box"><div id="hp-bar"></div></div>
+  <div id="score">淘汰：0</div>
+</div>
+
+<div id="gameOver">游戏结束</div>
+
+<div id="game">
+  <div id="player"><div id="gun"></div></div>
+</div>
+
+<script>
+const player = document.getElementById('player');
+const gun = document.getElementById('gun');
+const hpBar = document.getElementById('hp-bar');
+const scoreText = document.getElementById('score');
+const gameOver = document.getElementById('gameOver');
+const game = document.getElementById('game');
+
+let x = innerWidth / 2;
+let y = innerHeight / 2;
+let hp = 100;
+let score = 0;
+let gameEnd = false;
+let keys = {};
+let mouseX = x, mouseY = y; // 记录鼠标位置
+
+// 实时记录鼠标坐标
+window.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  
+  let dx = mouseX - x;
+  let dy = mouseY - y;
+  let angle = Math.atan2(dy, dx);
+  gun.style.transform = `rotate(${angle}rad)`;
+});
+
+// 按键监听
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// 玩家移动
+function updatePlayer() {
+  if (gameEnd) return;
+  let speed = 5;
+  
+  if (keys.w) y -= speed;
+  if (keys.s) y += speed;
+  if (keys.a) x -= speed;
+  if (keys.d) x += speed;
+
+  // 边界限制
+  if (x < 20) x = 20;
+  if (x > innerWidth - 20) x = innerWidth - 20;
+  if (y < 20) y = 20;
+  if (y > innerHeight - 20) y = innerHeight - 20;
+
+  player.style.left = x + 'px';
+  player.style.top = y + 'px';
+  requestAnimationFrame(updatePlayer);
+}
+updatePlayer();
+
+// 射击：子弹飞向鼠标位置
+window.addEventListener('click', () => {
+  if (gameEnd) return;
+  
+  let bullet = document.createElement('div');
+  bullet.className = 'bullet';
+  game.appendChild(bullet);
+  
+  let bx = x, by = y;
+  // 计算飞向鼠标的方向
+  let dx = mouseX - x;
+  let dy = mouseY - y;
+  let dist = Math.hypot(dx, dy);
+  let vx = (dx / dist) * 15;
+  let vy = (dy / dist) * 15;
+
+  function fly() {
+    bx += vx;
+    by += vy;
+    bullet.style.left = bx + 'px';
+    bullet.style.top = by + 'px';
+
+    if (bx < 0 || bx > innerWidth || by < 0 || by > innerHeight) {
+      bullet.remove();
+      return;
+    }
+
+    // 击中敌人
+    document.querySelectorAll('.enemy').forEach(en => {
+      let r = en.getBoundingClientRect();
+      let br = bullet.getBoundingClientRect();
+      if (
+        br.left < r.right && br.right > r.left &&
+        br.top < r.bottom && br.bottom > r.top
+      ) {
+        en.remove();
+        bullet.remove();
+        score++;
+        scoreText.textContent = '淘汰：' + score;
+      }
+    });
+    requestAnimationFrame(fly);
+  }
+  fly();
+});
+
+// 受伤
+function takeDamage(dmg) {
+  hp -= dmg;
+  if (hp < 0) hp = 0;
+  hpBar.style.width = hp + '%';
+  
+  if (hp <= 0) {
+    gameEnd = true;
+    gameOver.style.display = 'block';
+  }
+}
+
+// 生成敌人
+setInterval(() => {
+  if (gameEnd || document.querySelectorAll('.enemy').length >= 6) return;
+
+  let enemy = document.createElement('div');
+  enemy.className = 'enemy';
+  
+  let ex, ey;
+  if (Math.random() > 0.5) {
+    ex = Math.random() * innerWidth;
+    ey = Math.random() > 0.5 ? -40 : innerHeight + 40;
+  } else {
+    ey = Math.random() * innerHeight;
+    ex = Math.random() > 0.5 ? -40 : innerWidth + 40;
+  }
+
+  enemy.style.left = ex + 'px';
+  enemy.style.top = ey + 'px';
+  game.appendChild(enemy);
+
+  // 敌人追击
+  function chase() {
+    if (!enemy.isConnected || gameEnd) return;
+    
+    let ex_ = parseFloat(enemy.style.left);
+    let ey_ = parseFloat(enemy.style.top);
+    let dx = x - ex_;
+    let dy = y - ey_;
+    let dist = Math.hypot(dx, dy);
+    let sp = 1.8;
+
+    enemy.style.left = ex_ + dx / dist * sp + 'px';
+    enemy.style.top = ey_ + dy / dist * sp + 'px';
+
+    // 碰到玩家掉血
+    if (dist < 35) {
+      takeDamage(15);
+      enemy.remove();
+    }
+    requestAnimationFrame(chase);
+  }
+  chase();
+}, 1400);
+</script>
+</body>
+</html>

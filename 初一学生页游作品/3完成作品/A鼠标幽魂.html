@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星核猎手 · 硬核高难版</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            background: #050816;
+            overflow: hidden;
+            font-family: "Microsoft Yahei",sans-serif;
+        }
+        #gameBox{
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        canvas{
+            display: block;
+            background: linear-gradient(135deg,#0a1025,#000411);
+        }
+        .ui{
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #e0eaff;
+            font-size: 18px;
+            text-shadow: 0 0 8px #409eff;
+            z-index: 10;
+        }
+        .gameOver{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            background: rgba10,20,45,0.9;
+            background: rgba(10,20,45,0.9);
+            border: 1px solid #409eff;
+            border-radius: 16px;
+            padding: 40px 60px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 0 30px #2060cc;
+        }
+        .gameOver h2{
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .gameOver p{
+            color: #b0c8f0;
+            margin: 10px 0;
+        }
+        #restart{
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: #409eff;
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #restart:hover{
+            background: #1976d2;
+            box-shadow: 0 0 12px #409eff;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameBox">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui">
+            <p>分数：<span id="score">0</span></p>
+            <p>血量：<span id="hp">100</span></p>
+            <p>最高分：<span id="maxScore">0</span></p>
+            <p style="color:#ff5555">难度：极限</p>
+        </div>
+        <div class="gameOver" id="overBox">
+            <h2>游戏结束</h2>
+            <p>本次得分：<span id="nowScore">0</span></p>
+            <p>最高纪录：<span id="bestScore">0</span></p>
+            <button id="restart">重新挑战</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDom = document.getElementById('score');
+        const hpDom = document.getElementById('hp');
+        const maxDom = document.getElementById('maxScore');
+        const overBox = document.getElementById('overBox');
+        const nowScore = document.getElementById('nowScore');
+        const bestScore = document.getElementById('bestScore');
+        const restartBtn = document.getElementById('restart');
+
+        function resize(){
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize',resize);
+
+        let score = 0;
+        let hp = 100;
+        let maxScore = localStorage.getItem('starMax') || 0;
+        let gameRun = true;
+        let diff = 2.5; // 初始高难度
+        let chaseRock = false;
+
+        const player = {
+            x: canvas.width/2,
+            y: canvas.height/2,
+            r: 16
+        };
+
+        let starList = [];
+        let rockList = [];
+
+        canvas.addEventListener('mousemove',e=>{
+            player.x = e.clientX;
+            player.y = e.clientY;
+        })
+        canvas.addEventListener('touchmove',e=>{
+            e.preventDefault();
+            player.x = e.touches[0].clientX;
+            player.y = e.touches[0].clientY;
+        })
+
+        function createStar(){
+            starList.push({
+                x: Math.random()*canvas.width,
+                y: Math.random()*canvas.height,
+                r: 10
+            })
+        }
+        // 普通陨石 + 追踪陨石
+        function createRock(){
+            let isChase = Math.random() > 0.65;
+            rockList.push({
+                x: Math.random()*canvas.width,
+                y: -30,
+                r: 18 + Math.random()*18,
+                speed: 3.5 + diff + Math.random()*3,
+                chase: isChase
+            })
+        }
+
+        function getDis(a,b){
+            return Math.hypot(a.x-b.x,a.y-b.y);
+        }
+
+        function draw(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+
+            // 玩家
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+            let gra = ctx.createRadialGradient(player.x,player.y,0,player.x,player.y,player.r);
+            gra.addColorStop(0,'#ffffff');
+            gra.addColorStop(1,'#409eff');
+            ctx.fillStyle = gra;
+            ctx.fill();
+            ctx.shadowColor = '#409eff';
+            ctx.shadowBlur = 25;
+            ctx.restore();
+
+            // 星核
+            starList.forEach((s,i)=>{
+                ctx.beginPath();
+                ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+                let g = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r);
+                g.addColorStop(0,'#93f5ff');
+                g.addColorStop(1,'#00b8d4');
+                ctx.fillStyle = g;
+                ctx.fill();
+                if(getDis(player,s) < player.r + s.r){
+                    score += 10;
+                    starList.splice(i,1);
+                }
+            })
+
+            // 陨石逻辑
+            rockList.forEach((r,i)=>{
+                // 追踪陨石 瞄准玩家
+                if(r.chase){
+                    let dx = player.x - r.x;
+                    let dy = player.y - r.y;
+                    r.x += dx * 0.025;
+                    r.y += dy * 0.025;
+                }
+                r.y += r.speed;
+
+                ctx.beginPath();
+                ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+                let g = ctx.createRadialGradient(r.x,r.y,0,r.x,r.y,r.r);
+                g.addColorStop(0, r.chase ? '#ff2222' : '#ff7875');
+                g.addColorStop(1,'#900');
+                ctx.fillStyle = g;
+                ctx.fill();
+
+                // 碰撞扣血翻倍：一次扣25
+                if(getDis(player,r) < player.r + r.r){
+                    hp -= 25;
+                    rockList.splice(i,1);
+                }
+                if(r.y > canvas.height + 80) rockList.splice(i,1);
+            })
+
+            scoreDom.innerText = score;
+            hpDom.innerText = hp;
+            maxDom.innerText = Math.max(maxScore,score);
+
+            // 难度暴涨加速
+            diff += 0.0035;
+
+            if(hp <= 0){
+                gameOver();
+                return;
+            }
+            requestAnimationFrame(draw);
+        }
+
+        function gameOver(){
+            gameRun = false;
+            nowScore.innerText = score;
+            if(score > maxScore){
+                maxScore = score;
+                localStorage.setItem('starMax',maxScore);
+            }
+            bestScore.innerText = maxScore;
+            overBox.style.display = 'block';
+        }
+
+        restartBtn.onclick = function(){
+            score = 0;
+            hp = 100;
+            diff = 2.5;
+            starList = [];
+            rockList = [];
+            gameRun = true;
+            overBox.style.display = 'none';
+            draw();
+        }
+
+        // 星核刷新变慢
+        setInterval(()=>{
+            if(!gameRun) return;
+            createStar();
+        },1200)
+        // 陨石疯狂刷新
+        setInterval(()=>{
+            if(!gameRun) return;
+            createRock();
+        },350)
+
+        draw();
+    </script>
+</body>
+</html>

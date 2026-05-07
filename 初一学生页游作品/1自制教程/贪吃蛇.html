@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏 - 在线代码编辑</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        /* 页面标题 */
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        /* 主容器：左右分栏 */
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 左侧：游戏区域 */
+        .game-panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .game-canvas {
+            border: 3px solid #2c3e50;
+            background-color: #1a1a1a;
+            display: block;
+            margin: 0 auto 15px;
+        }
+
+        .game-info {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .game-info p {
+            font-size: 18px;
+            color: #2c3e50;
+            margin: 5px 0;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        /* 右侧：代码编辑区域 */
+        .code-panel {
+            flex: 1;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .code-panel h3 {
+            margin-bottom: 15px;
+            color: #ecf0f1;
+        }
+
+        #codeEditor {
+            flex: 1;
+            width: 100%;
+            padding: 15px;
+            background: #34495e;
+            color: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            font-family: "Consolas", monospace;
+            font-size: 14px;
+            resize: none;
+            margin-bottom: 15px;
+        }
+
+        #applyCode {
+            align-self: flex-end;
+            background: #2ecc71;
+        }
+
+        #applyCode:hover {
+            background: #27ae60;
+        }
+
+        /* 操作说明 */
+        .guide {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+
+        .guide h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .guide ul {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">零基础贪吃蛇游戏 - 在线修改代码</h1>
+
+    <!-- 主布局 -->
+    <div class="container">
+        <!-- 左侧：游戏运行区 -->
+        <div class="game-panel">
+            <h3 style="text-align:center; margin-bottom:15px;">游戏运行界面</h3>
+            <canvas id="gameCanvas" width="400" height="400" class="game-canvas"></canvas>
+            <div class="game-info">
+                <p>得分：<span id="score">0</span></p>
+                <p>操作：↑↓←→ 控制方向</p>
+            </div>
+            <div style="text-align:center;">
+                <button class="btn" onclick="resetGame()">重新开始</button>
+            </div>
+        </div>
+
+        <!-- 右侧：代码编辑区 -->
+        <div class="code-panel">
+            <h3>游戏代码（可直接修改）</h3>
+            <textarea id="codeEditor" spellcheck="false">
+// 贪吃蛇核心代码
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+
+// 基础设置 - 可修改这些数值
+const gridSize = 20;    // 格子大小
+const snakeColor = "#2ecc71"; // 蛇颜色
+const foodColor = "#e74c3c";  // 食物颜色
+let speed = 120;        // 游戏速度（越小越快）
+
+// 蛇初始状态
+let snake = [
+    {x: 10 * gridSize, y: 10 * gridSize}
+];
+let dx = gridSize;
+let dy = 0;
+let food = spawnFood();
+let score = 0;
+let gameLoop;
+let gameRunning = true;
+
+// 生成食物
+function spawnFood() {
+    let newFood;
+    while(!newFood || checkCollision(newFood, snake)) {
+        newFood = {
+            x: Math.floor(Math.random() * canvas.width / gridSize) * gridSize,
+            y: Math.floor(Math.random() * canvas.height / gridSize) * gridSize
+        };
+    }
+    return newFood;
+}
+
+// 碰撞检测
+function checkCollision(head, array) {
+    return array.some(segment => segment.x === head.x && segment.y === head.y);
+}
+
+// 绘制游戏
+function drawGame() {
+    // 清空画布
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 绘制蛇
+    snake.forEach(segment => {
+        ctx.fillStyle = snakeColor;
+        ctx.fillRect(segment.x, segment.y, gridSize - 2, gridSize - 2);
+    });
+
+    // 绘制食物
+    ctx.fillStyle = foodColor;
+    ctx.fillRect(food.x, food.y, gridSize - 2, gridSize - 2);
+}
+
+// 游戏主逻辑
+function updateGame() {
+    if(!gameRunning) return;
+
+    // 蛇头移动
+    const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+    // 撞墙/撞自己 游戏结束
+    if(head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkCollision(head, snake)) {
+        gameRunning = false;
+        alert("游戏结束！得分：" + score);
+        clearInterval(gameLoop);
+        return;
+    }
+
+    snake.unshift(head);
+
+    // 吃到食物
+    if(head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreElement.textContent = score;
+        food = spawnFood();
+    } else {
+        snake.pop();
+    }
+
+    drawGame();
+}
+
+// 键盘控制
+document.addEventListener('keydown', e => {
+    if(!gameRunning) return;
+    
+    switch(e.key) {
+        case "ArrowLeft":
+            if(dx !== gridSize) { dx = -gridSize; dy = 0; }
+            break;
+        case "ArrowRight":
+            if(dx !== -gridSize) { dx = gridSize; dy = 0; }
+            break;
+        case "ArrowUp":
+            if(dy !== gridSize) { dy = -gridSize; dx = 0; }
+            break;
+        case "ArrowDown":
+            if(dy !== -gridSize) { dy = gridSize; dx = 0; }
+            break;
+    }
+});
+
+// 开始游戏
+function startGame() {
+    gameRunning = true;
+    gameLoop = setInterval(updateGame, speed);
+}
+
+// 重置游戏
+function resetGame() {
+    clearInterval(gameLoop);
+    snake = [{x: 10 * gridSize, y: 10 * gridSize}];
+    dx = gridSize;
+    dy = 0;
+    food = spawnFood();
+    score = 0;
+    scoreElement.textContent = score;
+    startGame();
+}
+
+// 启动游戏
+startGame();
+            </textarea>
+            <button id="applyCode" class="btn" onclick="applyCustomCode()">应用代码修改</button>
+        </div>
+    </div>
+
+    <!-- 新手教程说明 -->
+    <div class="guide">
+        <h3>🎮 新手使用教程</h3>
+        <ul>
+            <li><b>运行方式</b>：直接用浏览器打开这个HTML文件即可运行，无需安装任何软件</li>
+            <li><b>游戏操作</b>：使用键盘 上下左右方向键 控制蛇移动</li>
+            <li><b>修改代码</b>：在右侧代码框中修改后，点击「应用代码修改」即可生效</li>
+            <li><b>可修改参数（新手推荐）</b>：
+                <ul>
+                    <li>gridSize：格子大小（改大蛇会变粗）</li>
+                    <li>speed：游戏速度（数字越小，蛇跑得越快）</li>
+                    <li>snakeColor：蛇的颜色（英文颜色/十六进制颜色）</li>
+                    <li>foodColor：食物颜色</li>
+                </ul>
+            </li>
+            <li><b>学习要点</b>：代码使用最基础的HTML画布+JS逻辑，注释完整，适合零基础学习</li>
+        </ul>
+    </div>
+
+    <script>
+        // 初始化加载代码
+        window.onload = function() {
+            const editor = document.getElementById('codeEditor');
+            // 格式化代码显示
+            editor.value = editor.value.trim();
+            // 运行初始游戏代码
+            eval(editor.value);
+        }
+
+        // 应用用户修改的代码
+        function applyCustomCode() {
+            const customCode = document.getElementById('codeEditor').value;
+            try {
+                // 停止旧游戏
+                clearInterval(window.gameLoop);
+                // 执行新代码
+                eval(customCode);
+                alert("代码修改成功！游戏已重启");
+            } catch (error) {
+                alert("代码出错：" + error.message + "\n请检查语法是否正确");
+            }
+        }
+
+        // 暴露重置方法给按钮
+        window.resetGame = function() {
+            if (window.resetGame) {
+                const customCode = document.getElementById('codeEditor').value;
+                clearInterval(window.gameLoop);
+                eval(customCode);
+            }
+        }
+    </script>
+</body>
+</html>
